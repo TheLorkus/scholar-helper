@@ -97,6 +97,32 @@ def _sum_rewards_usd(rewards, prices) -> float:
     return total
 
 
+def _get_finish_for_tournament(t: TournamentResult, username: str) -> str | int:
+    if t.finish is not None:
+        return t.finish
+    detail = t.raw.get("detail") if isinstance(t.raw, dict) else None
+    target = username.lower()
+    # Try players list
+    players = detail.get("players") if isinstance(detail, dict) else None
+    if isinstance(players, list):
+        for p in players:
+            if not isinstance(p, dict):
+                continue
+            if str(p.get("player", "")).lower() == target:
+                try:
+                    return int(p.get("finish"))
+                except Exception:
+                    break
+    # Try current_player block
+    current_player = detail.get("current_player") if isinstance(detail, dict) else None
+    if isinstance(current_player, dict) and str(current_player.get("player", "")).lower() == target:
+        try:
+            return int(current_player.get("finish"))
+        except Exception:
+            pass
+    return "-"
+
+
 def _render_user_summary(username: str, totals: AggregatedTotals, scholar_pct: float) -> None:
     st.markdown(f"**{username}**")
     cols = st.columns(4)
@@ -269,7 +295,7 @@ def main():
                 {
                     "Date": t.start_date.date() if t.start_date else None,
                     "Tournament": t.name,
-                    "Finish": t.finish or "-",
+                    "Finish": _get_finish_for_tournament(t, tour_user.strip()),
                     "Earnings (SPS)": sps_amt,
                     "Earnings (USD)": usd_amt,
                 }
