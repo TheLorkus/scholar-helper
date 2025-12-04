@@ -155,7 +155,8 @@ def main():
                 "Ranked (USD)": totals.ranked.usd,
                 "Brawl (USD)": totals.brawl.usd,
                 "Tournament (USD)": totals.tournament.usd,
-                "Entry fees (USD)": totals.entry_fees.usd,
+                "Scholar share (USD)": totals.overall.usd * (scholar_pct / 100),
+                "Scholar share (SPS)": totals.overall.token_amounts.get("SPS", 0) * (scholar_pct / 100),
             }
             for username, totals in per_user_totals
         ]
@@ -168,7 +169,8 @@ def main():
                 "Ranked (USD)": st.column_config.NumberColumn(format="%.2f"),
                 "Brawl (USD)": st.column_config.NumberColumn(format="%.2f"),
                 "Tournament (USD)": st.column_config.NumberColumn(format="%.2f"),
-                "Entry fees (USD)": st.column_config.NumberColumn(format="%.2f"),
+                "Scholar share (USD)": st.column_config.NumberColumn(format="%.2f"),
+                "Scholar share (SPS)": st.column_config.NumberColumn(format="%.2f"),
             },
         )
 
