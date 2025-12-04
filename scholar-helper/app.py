@@ -14,6 +14,7 @@ from scholar_helper.services.api import (
     fetch_unclaimed_balance_history,
 )
 from scholar_helper.services.storage import (
+    get_last_supabase_error,
     get_supabase_client,
     upsert_season_totals,
     upsert_tournament_logs,
@@ -188,6 +189,7 @@ def main():
     )
 
     supabase_ready = get_supabase_client() is not None
+    supabase_error = get_last_supabase_error()
     st.markdown("---")
     st.markdown("### Persistence")
     if supabase_ready:
@@ -200,10 +202,13 @@ def main():
             except Exception as exc:
                 st.error(f"Failed to sync to Supabase: {exc}")
     else:
-        st.info(
+        msg = (
             "Set SUPABASE_URL and SUPABASE_SERVICE_KEY (or ANON KEY) in your environment or "
             ".streamlit/secrets.toml to enable persistence."
         )
+        if supabase_error:
+            msg += f" (Init error: {supabase_error})"
+        st.info(msg)
 
 
 if __name__ == "__main__":

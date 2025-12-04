@@ -5,6 +5,10 @@ from typing import Iterable, Optional
 
 from dotenv import load_dotenv
 from supabase import Client, create_client
+try:
+    import streamlit as st
+except Exception:  # Streamlit not available in pure CLI runs (e.g., tests)
+    st = None
 
 from scholar_helper.models import AggregatedTotals, SeasonWindow, TournamentResult
 
@@ -12,26 +16,43 @@ SEASON_TABLE = "season_rewards"
 TOURNAMENT_TABLE = "tournament_logs"
 
 _client: Optional[Client] = None
+_last_error: Optional[str] = None
 
 load_dotenv()
 
 
 def get_supabase_client() -> Optional[Client]:
     global _client
+    global _last_error
     if _client is not None:
         return _client
 
+    # Prefer environment variables; fall back to Streamlit secrets when deployed on Streamlit Cloud.
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY")
+    if (not url or not key) and st is not None:
+        secrets = st.secrets
+        url = url or secrets.get("SUPABASE_URL")
+        key = key or secrets.get("SUPABASE_SERVICE_KEY") or secrets.get("SUPABASE_ANON_KEY")
+
     if not url or not key:
+        _last_error = "Missing SUPABASE_URL or key"
         return None
 
     try:
         _client = create_client(url, key)
+        _last_error = None
         return _client
     except Exception:
         # Fail softly if the client cannot be created (e.g., incompatible deps in the runtime).
+        import traceback
+
+        _last_error = traceback.format_exc(limit=1).strip()
         return None
+
+
+def get_last_supabase_error() -> Optional[str]:
+    return _last_error
 
 
 def upsert_season_totals(
