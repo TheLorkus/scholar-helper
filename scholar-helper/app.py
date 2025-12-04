@@ -124,7 +124,10 @@ def _get_finish_for_tournament(t: TournamentResult, username: str) -> str | int:
 
 
 def _render_user_summary(username: str, totals: AggregatedTotals, scholar_pct: float) -> None:
-    st.markdown(f"**{username}**")
+    st.markdown(
+        f"<div style='font-size:16px; font-weight:600; font-family:inherit;'>{username}</div>",
+        unsafe_allow_html=True,
+    )
     cols = st.columns(4)
     cols[0].metric("Overall", f"${totals.overall.usd:,.2f}")
     cols[1].metric("Ranked", f"${totals.ranked.usd:,.2f}")
