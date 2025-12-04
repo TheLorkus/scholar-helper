@@ -26,8 +26,12 @@ def get_supabase_client() -> Optional[Client]:
     if not url or not key:
         return None
 
-    _client = create_client(url, key)
-    return _client
+    try:
+        _client = create_client(url, key)
+        return _client
+    except Exception:
+        # Fail softly if the client cannot be created (e.g., incompatible deps in the runtime).
+        return None
 
 
 def upsert_season_totals(
