@@ -11,5 +11,4 @@ python-dateutil==2.9.0.post0
 httpx==0.25.2
 cachetools==5.3.3
 python-dotenv==1.0.1
-supabase==2.4.0
 tenacity==8.2.3
