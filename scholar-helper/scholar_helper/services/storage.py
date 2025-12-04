@@ -107,6 +107,7 @@ def upsert_tournament_logs(
                 "tournament_id": t.id,
                 "name": t.name,
                 "start_date": t.start_date.isoformat() if t.start_date else None,
+                "finish": t.finish,
                 "entry_fee_token": t.entry_fee.token if t.entry_fee else None,
                 "entry_fee_amount": t.entry_fee.amount if t.entry_fee else None,
                 "rewards": [r.__dict__ for r in t.rewards],

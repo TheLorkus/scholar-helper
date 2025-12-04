@@ -82,6 +82,7 @@ def fetch_tournaments(username: str, limit: int = 20) -> List[TournamentResult]:
             continue
 
         detail = _fetch_tournament_detail(raw.get("id"), username)
+        finish = _extract_player_finish(detail, username)
         # Prefer detail payload for dates/entry_fee if present.
         if isinstance(detail, dict):
             entry_fee = _parse_entry_fee(detail.get("entry_fee")) or entry_fee
@@ -102,6 +103,7 @@ def fetch_tournaments(username: str, limit: int = 20) -> List[TournamentResult]:
                 start_date=start_dt,
                 entry_fee=entry_fee,
                 rewards=rewards,
+                finish=finish,
                 raw=combined_raw,
             )
         )
@@ -353,6 +355,33 @@ def _tournament_sort_key(result: TournamentResult) -> datetime:
 def _list_payload_sort_key(raw: Dict[str, object]) -> datetime:
     start_dt = _parse_dt(raw.get("start_date"))
     return start_dt if start_dt else datetime.min.replace(tzinfo=timezone.utc)
+
+
+def _extract_player_finish(detail_payload: Optional[Dict[str, object]], username: str) -> Optional[int]:
+    if not detail_payload:
+        return None
+    target = username.lower()
+
+    players = detail_payload.get("players")
+    if isinstance(players, list):
+        for player in players:
+            if not isinstance(player, dict):
+                continue
+            if str(player.get("player", "")).lower() != target:
+                continue
+            try:
+                return int(player.get("finish"))
+            except Exception:
+                return None
+
+    current_player = detail_payload.get("current_player")
+    if isinstance(current_player, dict) and str(current_player.get("player", "")).lower() == target:
+        try:
+            return int(current_player.get("finish"))
+        except Exception:
+            return None
+
+    return None
 
 
 def _fetch_season_from_api(season_id: int | str | None) -> Optional[SeasonWindow]:

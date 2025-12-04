@@ -44,6 +44,7 @@ class TournamentResult:
     start_date: Optional[datetime]
     entry_fee: Optional[TokenAmount]
     rewards: List[TokenAmount] = field(default_factory=list)
+    finish: Optional[int] = None
     raw: Dict[str, object] = field(default_factory=dict)
 
 
