@@ -90,7 +90,7 @@ def main():
 
     col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
-        usernames_raw = st.text_input("Usernames (comma separated)", value="lorkus")
+        usernames_raw = st.text_input("Usernames (comma separated)", value="lorkus,vorkus")
     with col2:
         scholar_pct = st.number_input("Scholar share (%)", min_value=0, max_value=100, value=50, step=5)
     with col3:
