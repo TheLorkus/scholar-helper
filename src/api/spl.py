@@ -15,6 +15,7 @@ API_URLS = {
     "prices": "https://prices.splinterlands.com/",
 }
 
+
 log = configure_logger(__name__)
 
 
@@ -87,7 +88,7 @@ def get_nested_value(response_dict: dict, key_path: str) -> Any:
 
 @st.cache_data(ttl="1h")
 def get_land_resources_pools():
-    result = fetch_api_data(f'{API_URLS['land']}land/liquidity/landpools', data_key='data')
+    result = fetch_api_data(f"{API_URLS['land']}land/liquidity/landpools", data_key='data')
     if result:
         return pd.DataFrame(result)
     return pd.DataFrame()

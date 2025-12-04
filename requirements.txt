@@ -1,12 +1,15 @@
-# already in streamlit env
-streamlit~=1.45.1
-
+streamlit==1.51.0
+st-pages==1.0.1
+pandas==2.2.3
+plotly==5.24.1
 requests==2.32.3
 urllib3==2.2.2
-st-pages==1.0.1
-pandas~=2.2.3
-plotly~=5.24.1
-psycopg2-binary~=2.9.10
-sqlalchemy~=2.0.40
-toml~=0.10.2
-python-dateutil~=2.9.0.post0
+psycopg2-binary==2.9.10
+sqlalchemy==2.0.40
+toml==0.10.2
+python-dateutil==2.9.0.post0
+httpx==0.28.1
+cachetools==5.3.3
+python-dotenv==1.0.1
+supabase==2.4.0
+tenacity==9.1.0

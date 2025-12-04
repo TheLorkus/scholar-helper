@@ -15,6 +15,7 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
+.write-check
 
 # Local data
 data/*.json

@@ -9,3 +9,6 @@ data
 __pycache__/
 *.py[cod]
 app.db
+.DS_Store
+/land-optimizer/
+.write-check
