@@ -22,7 +22,6 @@ cachetools = "5.3.3"
 python-dotenv = "1.0.1"
 supabase = "2.4.0"
 tenacity = "8.2.3"
-pyarrow = "15.0.2"
 
 [tool.black]
 line-length = 100
