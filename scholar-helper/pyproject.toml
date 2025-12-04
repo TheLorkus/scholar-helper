@@ -2,6 +2,9 @@
 name = "scholar-helper-app"
 version = "0.1.0"
 
+[tool.poetry]
+package-mode = false
+
 [tool.black]
 line-length = 100
 target-version = ["py311"]
