@@ -16,13 +16,17 @@ from scholar_helper.services.api import (
     fetch_unclaimed_balance_history,
 )
 from scholar_helper.services.storage import (
-    fetch_season_history,
     get_last_supabase_error,
     get_supabase_client,
     update_season_currency,
     upsert_season_totals,
     upsert_tournament_logs,
 )
+
+try:
+    from scholar_helper.services.storage import fetch_season_history
+except ImportError:  # pragma: no cover - fallback for older deployments
+    fetch_season_history = lambda username: []
 
 st.set_page_config(page_title="Scholar Rewards Tracker", layout="wide")
 load_dotenv()
