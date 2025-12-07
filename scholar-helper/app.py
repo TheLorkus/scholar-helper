@@ -18,7 +18,6 @@ from scholar_helper.services.api import (
 from scholar_helper.services.storage import (
     get_last_supabase_error,
     get_supabase_client,
-    update_season_currency,
     upsert_season_totals,
     upsert_tournament_logs,
 )
@@ -27,6 +26,12 @@ try:
     from scholar_helper.services.storage import fetch_season_history
 except ImportError:  # pragma: no cover - fallback for older deployments
     fetch_season_history = lambda username: []
+
+try:
+    from scholar_helper.services.storage import update_season_currency
+except ImportError:  # pragma: no cover - fallback for older deployments
+    def update_season_currency(username: str, season_id: int, currency: str) -> bool:
+        return False
 
 st.set_page_config(page_title="Scholar Rewards Tracker", layout="wide")
 load_dotenv()
