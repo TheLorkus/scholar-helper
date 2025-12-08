@@ -27,8 +27,9 @@ Python version: see `runtime.txt` (3.11.14).
 - Supabase automation: migrations create `call_season_sync()` + pg_cron job `season-sync-hourly` and `call_update_season_schedule()` + `refresh-season-sync-cron` that POST the Edge functions.
 - Deploy the Edge Functions: `supabase functions deploy season-sync` (existing) and `supabase functions deploy update-season-schedule`; set the secret `SUPABASE_SERVICE_ROLE_KEY=<service-role-key>`.
 - The `update-season-schedule` function refreshes the Supabase Scheduler entry named `season-sync` to run 10 minutes before the current season ends (default season endpoint: `https://api.splinterlands.com/season?id=171`). Invoke it once after deploy (`supabase functions invoke update-season-schedule --no-verify-jwt`) or wait for the midnight cron to seed the schedule.
-## Import historical season snapshots
+-## Import historical season snapshots
 
+- Both the app and importer require the `SUPABASE_SERVICE_ROLE_KEY` (not just `SUPABASE_ANON_KEY`) so they can read/write `public.season_rewards`; configure that secret in Streamlit Cloud and your `.env` file to keep the history tab working.
 - You can optionally include ISO8601 `season_start`/`season_end` columns, but if they’re missing the script will leave them blank by default; pass `--fetch-season-window` (and optionally `--season-api`) to pull ranges from Splinterlands when you want them filled. The schema accepts NULL so the UI simply renders `-` when dates are unavailable.
 - Export the CSV into `data/history-lorkus.csv` (or any repo-relative path) so you can reference it consistently. Run the helper script from the repository root with the Supabase URL/key, the CSV path, and any mappings your headers require:
 
