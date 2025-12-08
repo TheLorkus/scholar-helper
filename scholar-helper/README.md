@@ -27,6 +27,10 @@ Python version: see `runtime.txt` (3.11.14).
 - Supabase automation: migrations create `call_season_sync()` + pg_cron job `season-sync-hourly` and `call_update_season_schedule()` + `refresh-season-sync-cron` that POST the Edge functions.
 - Deploy the Edge Functions: `supabase functions deploy season-sync` (existing) and `supabase functions deploy update-season-schedule`; set the secret `SUPABASE_SERVICE_ROLE_KEY=<service-role-key>`.
 - The `update-season-schedule` function refreshes the Supabase Scheduler entry named `season-sync` to run 10 minutes before the current season ends (default season endpoint: `https://api.splinterlands.com/season?id=171`). Invoke it once after deploy (`supabase functions invoke update-season-schedule --no-verify-jwt`) or wait for the midnight cron to seed the schedule.
+
+## Brawl dashboard
+
+The app now exposes a “Brawl dashboard” tab that mirrors the standalone Splinterlands Brawl Dashboard repo: enter a guild ID (defaulting to your guild) and the UI pulls the most recent brawl records plus player win/loss stats for the last 20 cycles. This section reuses the API helpers from `scholar_helper.services.brawl_dashboard`, shows the latest guild payouts, and computes per-player win rates for the selected window—it can be extended with Supabase persistence once the brawl schema is finalized.
 -## Import historical season snapshots
 
 - Both the app and importer require the `SUPABASE_SERVICE_ROLE_KEY` (not just `SUPABASE_ANON_KEY`) so they can read/write `public.season_rewards`; configure that secret in Streamlit Cloud and your `.env` file to keep the history tab working.
