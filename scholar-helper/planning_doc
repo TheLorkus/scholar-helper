@@ -8,6 +8,6 @@ Supabase scheduling plan:
 7. Keep a list of CLI steps for manual operation if automation isn’t available: `supabase functions deploy update-season-schedule`, `supabase scheduling create --name refresh-season-sync-cron --schedule "0 0 * * *" --type function ...`, and rerun `scripts/update_season_schedule.py` or the scheduler function whenever an extra manual update is needed.
 
 Status:
-- pg_cron jobs `season-sync-hourly` and `refresh-season-sync-cron` are installed and checked via MCP; they POST to the deployed Edge functions, so the hourly season sync and daily scheduler refresh are live.
+- pg_cron jobs `season-sync-hourly` and `refresh-season-sync-cron` remain active and verified via MCP; they POST to the Edge functions so the hourly season sync and daily scheduler refresh are live.
 - Added `scripts/import_season_history.py` plus README guidance to import historical CSVs into `public.season_rewards`, including the new `scholar_payout` column so the Scholar History tab always shows the “paid to scholar” amount.
-- Streamlit UI now surfaces the currency price table in the sidebar, derives historical Scholar Payout values from either the imported column or the live API, and limits payout-currency edits to the two newest history rows.
+- Streamlit UI now defaults to the new Brawl Assistant landing page that mirrors the original Splinterlands Brawl Dashboard (history table, per-player drill-down, stats window) and renders wins/losses + win-rate Altair charts driven by the sidebar slider. The Scholar tracker page still derives historical Scholar Payout values from either the imported CSV column or live API and only lets you edit payout currency for the most recent two entries.

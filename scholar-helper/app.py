@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import altair as alt
 import json
 from collections import defaultdict
 from typing import Dict, List
 
+import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
 
@@ -775,25 +777,73 @@ def render_brawl_assistant():
 
     with tabs[2]:
         st.subheader("Guild trends")
+        st.caption(f"Showing the last {window_brawls} cycles controlled by the slider.")
 
-        if "total_sps_payout" in history.columns:
-            payout_sum = (
-                history.groupby("cycle")["total_sps_payout"]
-                .sum()
-                .sort_index(ascending=False)
+        cycles = sorted(history["cycle"].dropna().unique(), reverse=True)[:window_brawls]
+        if not cycles:
+            st.info("Cycle data is required to visualize trends.")
+            return
+
+        trend_data = history[history["cycle"].isin(cycles)].copy()
+        if trend_data.empty:
+            st.info("No guild data available for the selected cycles.")
+            return
+
+        trend_columns = ["wins", "losses", "draws"]
+        available_counts = [col for col in trend_columns if col in trend_data.columns]
+        if not available_counts:
+            st.info("No win/loss information available for the selected cycles.")
+            return
+
+        agg = (
+            trend_data.groupby("cycle")[available_counts]
+            .sum()
+            .reset_index()
+            .sort_values("cycle", ascending=False)
+        )
+        match_components = [col for col in ["wins", "losses", "draws"] if col in agg.columns]
+        agg["matches"] = agg[match_components].sum(axis=1)
+        wins_series = agg.get("wins", pd.Series(0, index=agg.index))
+        agg["win_rate"] = wins_series / agg["matches"].replace({0: 1})
+
+        melted = agg.melt(
+            id_vars="cycle",
+            value_vars=[col for col in ["wins", "losses"] if col in agg.columns],
+            var_name="result",
+            value_name="count",
+        )
+        if not melted.empty:
+            bar_chart = (
+                alt.Chart(melted)
+                .mark_bar()
+                .encode(
+                    x=alt.X("cycle:O", title="Cycle", sort=alt.EncodingSortField(field="cycle", order="descending")),
+                    y=alt.Y("count:Q", title="Matches"),
+                    color=alt.Color("result:N", title="Result"),
+                    tooltip=["cycle", "result", "count"],
+                )
+                .properties(height=280)
             )
-            st.bar_chart(payout_sum)
+            st.altair_chart(bar_chart, use_container_width=True)
         else:
-            st.info("No SPS payout data available for the trend chart.")
+            st.info("Not enough data to compute wins vs losses.")
 
-        merits_columns = [
-            col
-            for col in ["cycle", "total_merits_payout", "member_merits_payout"]
-            if col in history.columns
-        ]
-        merits_df = history[merits_columns].dropna()
-        if not merits_df.empty and "cycle" in merits_df.columns:
-            st.line_chart(merits_df.set_index("cycle"))
+        win_rate_chart = (
+            alt.Chart(agg)
+            .mark_line(point=True)
+            .encode(
+                x=alt.X("cycle:O", title="Cycle", sort=alt.EncodingSortField(field="cycle", order="descending")),
+                y=alt.Y("win_rate:Q", title="Win rate", axis=alt.Axis(format="%")),
+                tooltip=[
+                    "cycle",
+                    alt.Tooltip("wins", title="Wins"),
+                    alt.Tooltip("losses", title="Losses"),
+                    alt.Tooltip("win_rate", format=".0%", title="Win rate"),
+                ],
+            )
+            .properties(height=250)
+        )
+        st.altair_chart(win_rate_chart, use_container_width=True)
 
 
 def main() -> None:
