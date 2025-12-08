@@ -304,7 +304,7 @@ def _render_user_summary(username: str, totals: AggregatedTotals, scholar_pct: f
     cols[3].metric("Tournament", f"${totals.tournament.usd:,.2f}")
 
 
-def main():
+def render_scholar_tracker():
     st.title("Scholar Rewards Tracker")
     st.caption("Splinterlands rewards, tournaments, and brawls with USD conversion.")
 
@@ -336,8 +336,8 @@ def main():
         )
     st.write(f"Season {season.id}: {season.starts.date()} \u2192 {season.ends.date()}")
 
-    tab_summary, tab_tournaments, tab_history, tab_brawl = st.tabs(
-        ["Summary", "Tournaments", "Scholar history", "Brawl dashboard"]
+    tab_summary, tab_tournaments, tab_history = st.tabs(
+        ["Summary", "Tournaments", "Scholar history"]
     )
 
     with tab_summary:
@@ -650,47 +650,90 @@ def main():
                                 f"Scholar payout currency updated to {selected_currency} for season {_record_season_id(record)}."
                             )
                         st.experimental_rerun()  # type: ignore[attr-defined]
-            else:
-                st.error("Failed to update the payout currency; check your Supabase configuration.")
+                else:
+                    st.error("Failed to update the payout currency; check your Supabase configuration.")
 
-    with tab_brawl:
-        st.subheader("Guild brawl dashboard")
-        guild_id = st.text_input("Guild ID", value=DEFAULT_GUILD_ID, help="Guild to fetch brawl history for.")
-        max_brawls = st.slider("Recent cycles to consider", min_value=5, max_value=40, value=20, step=5)
 
-        if guild_id:
-            brawl_df = fetch_guild_brawls(guild_id)
-            if brawl_df.empty:
-                st.info("No guild brawls found for that guild.")
+def render_brawl_assistant():
+    st.title("Brawl Assistant")
+    st.caption("Guild brawl history, player detail, and trend analysis.")
+
+    guild_id = st.sidebar.text_input("Guild ID", value=DEFAULT_GUILD_ID, help="Guild to load brawl records for.")
+    max_brawls = st.sidebar.slider("Cycles to inspect", min_value=5, max_value=50, value=20, step=5)
+
+    if not guild_id:
+        st.info("Enter a guild ID in the sidebar to load brawl data.")
+        return
+
+    history = fetch_guild_brawls(guild_id)
+    tabs = st.tabs(["Guild brawls", "Player stats", "Guild trends"])
+
+    with tabs[0]:
+        st.subheader("Guild brawl history")
+        if history.empty:
+            st.info("No history was returned for this guild.")
+        else:
+            st.dataframe(
+                history[
+                    [
+                        "cycle",
+                        "tournament_id",
+                        "wins",
+                        "losses",
+                        "draws",
+                        "pts",
+                        "total_sps_payout",
+                    ]
+                ].head(15),
+                use_container_width=True,
+            )
+            tournament_ids = history["tournament_id"].dropna().astype(str).unique().tolist()
+            selected = st.selectbox("Drill into a tournament", options=[""] + tournament_ids)
+            if selected:
+                details = fetch_brawl_details(selected, guild_id)
+                players = details.get("players") or []
+                st.markdown(f"**Tournament {selected} details**")
+                if players:
+                    st.dataframe(players, use_container_width=True)
+                else:
+                    st.info("No player detail was returned for that tournament.")
+
+    with tabs[1]:
+        st.subheader("Player stats window")
+        if history.empty:
+            st.info("Need guild data to compute player stats.")
+        else:
+            player_rows = build_player_rows(guild_id, history, max_brawls)
+            stats_df = compute_player_stats(player_rows, window=5)
+            if stats_df.empty:
+                st.info("No player records captured yet.")
             else:
-                st.markdown("#### Recent guild brawls")
+                stats_df["win_rate"] = (stats_df["win_rate"] * 100).round(1)
                 st.dataframe(
-                    brawl_df[
-                        [
-                            "cycle",
-                            "tournament_id",
-                            "wins",
-                            "losses",
-                            "draws",
-                            "pts",
-                            "total_sps_payout",
-                        ]
-                    ].head(10),
+                    stats_df[["player", "wins", "losses", "draws", "matches", "win_rate"]],
                     use_container_width=True,
                 )
 
-                player_rows = build_player_rows(guild_id, brawl_df, max_brawls)
-                stats = compute_player_stats(player_rows, window=5)
-                if stats.empty:
-                    st.info("No player details were available for the selected brawls.")
-                else:
-                    st.markdown("#### Player performance trends")
-                    st.dataframe(
-                        stats[["player", "wins", "losses", "draws", "matches", "win_rate"]],
-                        use_container_width=True,
-                    )
+    with tabs[2]:
+        st.subheader("Guild trends")
+        if history.empty:
+            st.info("Need guild history to show trends.")
         else:
-            st.info("Enter a guild ID to load data.")
+            payout = history.groupby("cycle")["total_sps_payout"].sum().sort_index(ascending=False)
+            st.bar_chart(payout)
+            merits = history[
+                ["cycle", "total_merits_payout", "member_merits_payout"]
+            ].dropna()
+            if not merits.empty:
+                st.line_chart(merits.set_index("cycle"))
+
+
+def main() -> None:
+    page = st.sidebar.radio("Page", ["Brawl Assistant", "Scholar rewards"], index=0)
+    if page == "Brawl Assistant":
+        render_brawl_assistant()
+    else:
+        render_scholar_tracker()
 
 
 if __name__ == "__main__":

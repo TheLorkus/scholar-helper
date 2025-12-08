@@ -7,6 +7,7 @@ Add the Splinterlands Brawl Dashboard playback into the Scholar Helper app as a 
 
 ## Step 2: Define the new page structure
 - In `app.py`, add a second tab or navigation item for “Brawl dashboard” (or similar). Extract the existing components into helper functions so the tabs don’t grow unwieldy.  
+- Instead of extending a single screen, turn the UI into a multi-page experience: make “Brawl Assistant” the landing page, then let the user switch to the Scholar rewards tracker as the second page (the deck on the right can remain unchanged). Extract the page logic into functions to keep the code modular.
 - Reuse shared services (e.g., price loader, API clients) where possible; extract common utilities into `scholar_helper.services` modules.  
 - Plan the UX so both tabs offer consistent inputs (usernames, filters) and include a shared history/persistence trigger if relevant.
 

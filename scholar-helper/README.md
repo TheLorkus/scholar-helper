@@ -30,7 +30,7 @@ Python version: see `runtime.txt` (3.11.14).
 
 ## Brawl dashboard
 
-The app now exposes a “Brawl dashboard” tab that mirrors the standalone Splinterlands Brawl Dashboard repo: enter a guild ID (defaulting to your guild) and the UI pulls the most recent brawl records plus player win/loss stats for the last 20 cycles. This section reuses the API helpers from `scholar_helper.services.brawl_dashboard`, shows the latest guild payouts, and computes per-player win rates for the selected window—it can be extended with Supabase persistence once the brawl schema is finalized.
+The app now exposes a “Brawl Assistant” landing page (it loads first) that mirrors the standalone Splinterlands Brawl Dashboard repo: enter a guild ID (defaulting to your guild) and use the multi-tab layout (Brawl history, Player stats, Guild trends) to see recent cycles, drill into individual tournaments, and compare player win rates. The Scholar rewards tracker remains available as the second page. The Brawl Assistant leverages `scholar_helper.services.brawl_dashboard` and can be extended with Supabase persistence once the brawl schema is finalized.
 -## Import historical season snapshots
 
 - Both the app and importer require the `SUPABASE_SERVICE_ROLE_KEY` (not just `SUPABASE_ANON_KEY`) so they can read/write `public.season_rewards`; configure that secret in Streamlit Cloud and your `.env` file to keep the history tab working.
