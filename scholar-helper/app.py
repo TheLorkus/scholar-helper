@@ -643,18 +643,18 @@ def render_scholar_tracker():
                     key=selection_key,
                     index=history_currency_options.index(default_currency),
                 )
-                if cols[3].button(
-                    "Save currency",
-                    key=f"history_save_{normalized_history_username.lower()}_{_record_season_id(record)}_{idx}",
-                ):
-                    if update_season_currency(normalized_history_username, _record_season_id(record), selected_currency):
+                save_key = f"history_save_{normalized_history_username.lower()}_{_record_season_id(record)}_{idx}"
+                if cols[3].button("Save currency", key=save_key):
+                    if update_season_currency(
+                        normalized_history_username, _record_season_id(record), selected_currency
+                    ):
                         if feedback_key:
                             st.session_state[feedback_key] = (
                                 f"Scholar payout currency updated to {selected_currency} for season {_record_season_id(record)}."
                             )
                         st.experimental_rerun()  # type: ignore[attr-defined]
-                else:
-                    st.error("Failed to update the payout currency; check your Supabase configuration.")
+                    else:
+                        cols[3].error("Failed to update the payout currency; check your Supabase configuration.")
 
 
 def render_brawl_assistant():
