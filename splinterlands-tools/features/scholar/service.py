@@ -219,11 +219,11 @@ def _aggregated_totals_from_record(record: Dict[str, object]) -> AggregatedTotal
     brawl = _category_totals_from_record(record, "brawl")
     tournament = _category_totals_from_record(record, "tournament")
     entry_fees = _category_totals_from_record(record, "entry_fees")
+    # Overall tokens exclude entry fees for display.
     overall_tokens = _merge_token_amounts(
         ranked.token_amounts,
         brawl.token_amounts,
         tournament.token_amounts,
-        entry_fees.token_amounts,
     )
     overall_usd = _safe_float(record.get("overall_usd"))
     if not overall_usd:
