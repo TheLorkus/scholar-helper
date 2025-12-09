@@ -134,7 +134,7 @@ def render_page() -> None:
                     display_df[
                         ["player", "wins", "losses", "draws", "matches", "win_rate", "brawls_played"]
                     ],
-                    use_container_width=True,
+                    width="stretch",
                 )
 
     with tabs[2]:
@@ -186,7 +186,7 @@ def render_page() -> None:
                 )
                 .properties(height=280)
             )
-            st.altair_chart(bar_chart, use_container_width=True)
+            st.altair_chart(bar_chart, width="stretch")
         else:
             st.info("Not enough data to compute wins vs losses.")
 
@@ -205,7 +205,7 @@ def render_page() -> None:
             )
             .properties(height=250)
         )
-        st.altair_chart(win_rate_chart, use_container_width=True)
+        st.altair_chart(win_rate_chart, width="stretch")
 
 
 if __name__ == "__main__":
