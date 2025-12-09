@@ -32,7 +32,7 @@ from features.scholar.service import (
 from scholar_helper.models import AggregatedTotals, CategoryTotals, RewardEntry, TournamentResult
 
 
-setup_page("Scholar Rewards Tracker")
+setup_page("Rewards Tracker")
 
 
 def _entry_fee_to_tokens(entry_fee) -> dict[str, float]:
@@ -61,8 +61,8 @@ def _token_amounts_from_rewards(rewards) -> dict[str, float]:
 
 
 def render_page():
-    st.title("Scholar Rewards Tracker")
-    st.caption("Splinterlands rewards, tournaments, and brawls with USD conversion.")
+    st.title("Rewards Tracker")
+    st.caption("Account-centric rewards. Toggle Scholar mode for payout tools and history.")
 
     try:
         season = cached_season()
@@ -81,6 +81,8 @@ def render_page():
             display = _format_price(price) if price is not None else "-"
         price_rows.append({"Currency": token, "USD price": display})
     with st.sidebar:
+        st.subheader("Mode")
+        scholar_mode = st.toggle("Scholar mode", value=False, help="Enable scholar payouts/history")
         st.subheader("Prices")
         st.dataframe(
             price_rows,
@@ -92,16 +94,24 @@ def render_page():
         )
     st.write(f"Season {season.id}: {season.starts.date()} \u2192 {season.ends.date()}")
 
-    tab_summary, tab_tournaments, tab_history = st.tabs(
-        ["Summary", "Tournaments", "Scholar history"]
-    )
+    tab_labels = ["Summary", "Tournaments"]
+    if scholar_mode:
+        tab_labels.append("Scholar history")
+    tabs = st.tabs(tab_labels)
+    tab_summary = tabs[0]
+    tab_tournaments = tabs[1]
+    tab_history = tabs[2] if scholar_mode else None
 
     with tab_summary:
         col1, col2, col3 = st.columns([2, 1, 1])
         with col1:
             usernames_raw = st.text_input("Usernames (comma separated)", value="lorkus,vorkus")
         with col2:
-            scholar_pct = st.number_input("Scholar share (%)", min_value=0, max_value=100, value=50, step=5)
+            scholar_pct = (
+                st.number_input("Scholar share (%)", min_value=0, max_value=100, value=50, step=5)
+                if scholar_mode
+                else 0
+            )
         with col3:
             refresh_clicked = st.button("Refresh now")
 
@@ -177,57 +187,58 @@ def render_page():
                 },
             )
 
-            currency_options = _build_currency_options(per_user_totals)
-            st.markdown("#### Scholar payout currency per account")
-            selector_columns_count = max(1, min(2, len(per_user_totals)))
-            selector_columns = st.columns(selector_columns_count)
-            default_currency_idx = currency_options.index("SPS") if "SPS" in currency_options else 0
-            currency_choices: dict[int, str] = {}
-            for idx, (username, _) in enumerate(per_user_totals):
-                selection_column = selector_columns[idx % selector_columns_count]
-                currency_choices[idx] = selection_column.selectbox(
-                    f"{username} payout currency",
-                    options=currency_options,
-                    key=f"scholar_payout_currency_{idx}_{username}",
-                    index=default_currency_idx,
-                )
+            if scholar_mode:
+                currency_options = _build_currency_options(per_user_totals)
+                st.markdown("#### Scholar payout currency per account")
+                selector_columns_count = max(1, min(2, len(per_user_totals)))
+                selector_columns = st.columns(selector_columns_count)
+                default_currency_idx = currency_options.index("SPS") if "SPS" in currency_options else 0
+                currency_choices: dict[int, str] = {}
+                for idx, (username, _) in enumerate(per_user_totals):
+                    selection_column = selector_columns[idx % selector_columns_count]
+                    currency_choices[idx] = selection_column.selectbox(
+                        f"{username} payout currency",
+                        options=currency_options,
+                        key=f"scholar_payout_currency_{idx}_{username}",
+                        index=default_currency_idx,
+                    )
 
-            st.markdown("#### Scholar + owner share table")
-            default_currency = currency_options[default_currency_idx]
-            table_rows = []
-            for idx, (username, user_totals) in enumerate(per_user_totals):
-                scholar_share_usd = user_totals.overall.usd * (scholar_pct / 100)
-                owner_share_usd = user_totals.overall.usd - scholar_share_usd
-                scholar_share_sps = user_totals.overall.token_amounts.get("SPS", 0) * (scholar_pct / 100)
-                selected_currency = currency_choices.get(idx, default_currency)
-                payout_display = _format_scholar_payout(selected_currency, user_totals, scholar_pct, prices)
-                table_rows.append(
-                    {
-                        "User": username,
-                        "Overall (USD)": user_totals.overall.usd,
-                        "Ranked (USD)": user_totals.ranked.usd,
-                        "Brawl (USD)": user_totals.brawl.usd,
-                        "Tournament (USD)": user_totals.tournament.usd,
-                        "Scholar share (USD)": scholar_share_usd,
-                        "Owner share (USD)": owner_share_usd,
-                        "Scholar share (SPS)": scholar_share_sps,
-                        "Scholar payout": payout_display,
-                    }
+                st.markdown("#### Scholar + owner share table")
+                default_currency = currency_options[default_currency_idx]
+                table_rows = []
+                for idx, (username, user_totals) in enumerate(per_user_totals):
+                    scholar_share_usd = user_totals.overall.usd * (scholar_pct / 100)
+                    owner_share_usd = user_totals.overall.usd - scholar_share_usd
+                    scholar_share_sps = user_totals.overall.token_amounts.get("SPS", 0) * (scholar_pct / 100)
+                    selected_currency = currency_choices.get(idx, default_currency)
+                    payout_display = _format_scholar_payout(selected_currency, user_totals, scholar_pct, prices)
+                    table_rows.append(
+                        {
+                            "User": username,
+                            "Overall (USD)": user_totals.overall.usd,
+                            "Ranked (USD)": user_totals.ranked.usd,
+                            "Brawl (USD)": user_totals.brawl.usd,
+                            "Tournament (USD)": user_totals.tournament.usd,
+                            "Scholar share (USD)": scholar_share_usd,
+                            "Owner share (USD)": owner_share_usd,
+                            "Scholar share (SPS)": scholar_share_sps,
+                            "Scholar payout": payout_display,
+                        }
+                    )
+                st.dataframe(
+                    table_rows,
+                    width="stretch",
+                    hide_index=True,
+                    column_config={
+                        "Overall (USD)": st.column_config.NumberColumn(format="%.2f"),
+                        "Ranked (USD)": st.column_config.NumberColumn(format="%.2f"),
+                        "Brawl (USD)": st.column_config.NumberColumn(format="%.2f"),
+                        "Tournament (USD)": st.column_config.NumberColumn(format="%.2f"),
+                        "Scholar share (USD)": st.column_config.NumberColumn(format="%.2f"),
+                        "Owner share (USD)": st.column_config.NumberColumn(format="%.2f"),
+                        "Scholar share (SPS)": st.column_config.NumberColumn(format="%.2f"),
+                    },
                 )
-            st.dataframe(
-                table_rows,
-                width="stretch",
-                hide_index=True,
-                column_config={
-                    "Overall (USD)": st.column_config.NumberColumn(format="%.2f"),
-                    "Ranked (USD)": st.column_config.NumberColumn(format="%.2f"),
-                    "Brawl (USD)": st.column_config.NumberColumn(format="%.2f"),
-                    "Tournament (USD)": st.column_config.NumberColumn(format="%.2f"),
-                    "Scholar share (USD)": st.column_config.NumberColumn(format="%.2f"),
-                    "Owner share (USD)": st.column_config.NumberColumn(format="%.2f"),
-                    "Scholar share (SPS)": st.column_config.NumberColumn(format="%.2f"),
-                },
-            )
 
         st.markdown("### Rewards by source (all users, season)")
         source_rows = [
@@ -297,129 +308,130 @@ def render_page():
         else:
             st.info("Enter a username to view tournament history.")
 
-    with tab_history:
-        st.markdown("### Supabase history (season totals)")
-        supabase_client = get_supabase_client()
-        if supabase_client is None:
-            st.warning("Supabase is not configured. Check environment variables or connectivity.")
-        else:
-            history_username_raw = st.text_input("History username", value="lorkus")
-            normalized_history_username = history_username_raw.lower().strip()
-            history_currency_options = ["SPS", "USD", "DEC", "ETH", "HIVE", "BTC", "VOUCHER"]
-            feedback_key = f"history_feedback_{normalized_history_username}"
+    if scholar_mode and tab_history is not None:
+        with tab_history:
+            st.markdown("### Supabase history (season totals)")
+            supabase_client = get_supabase_client()
+            if supabase_client is None:
+                st.warning("Supabase is not configured. Check environment variables or connectivity.")
+            else:
+                history_username_raw = st.text_input("History username", value="lorkus")
+                normalized_history_username = history_username_raw.lower().strip()
+                history_currency_options = ["SPS", "USD", "DEC", "ETH", "HIVE", "BTC", "VOUCHER"]
+                feedback_key = f"history_feedback_{normalized_history_username}"
 
-            if feedback_key in st.session_state:
-                st.success(st.session_state[feedback_key])
-                del st.session_state[feedback_key]
+                if feedback_key in st.session_state:
+                    st.success(st.session_state[feedback_key])
+                    del st.session_state[feedback_key]
 
-            if not normalized_history_username:
-                st.info("Enter a username to load Supabase history.")
-                return
+                if not normalized_history_username:
+                    st.info("Enter a username to load Supabase history.")
+                    return
 
-            with st.spinner("Loading history from Supabase..."):
-                records = fetch_season_history(normalized_history_username)
-            if not records:
-                st.info("No season history found for that user.")
-                return
+                with st.spinner("Loading history from Supabase..."):
+                    records = fetch_season_history(normalized_history_username)
+                if not records:
+                    st.info("No season history found for that user.")
+                    return
 
-            filtered_records: list[dict] = []
-            for rec in records:
-                usernames_field = rec.get("username") or rec.get("usernames")
-                names: list[str] = []
-                if isinstance(usernames_field, str):
-                    names = [n.strip().lower() for n in usernames_field.replace(";", ",").split(",") if n.strip()]
-                elif isinstance(usernames_field, list):
-                    names = [str(n).strip().lower() for n in usernames_field if str(n).strip()]
-                if not names or normalized_history_username in names:
-                    filtered_records.append(rec)
+                filtered_records: list[dict] = []
+                for rec in records:
+                    usernames_field = rec.get("username") or rec.get("usernames")
+                    names: list[str] = []
+                    if isinstance(usernames_field, str):
+                        names = [n.strip().lower() for n in usernames_field.replace(";", ",").split(",") if n.strip()]
+                    elif isinstance(usernames_field, list):
+                        names = [str(n).strip().lower() for n in usernames_field if str(n).strip()]
+                    if not names or normalized_history_username in names:
+                        filtered_records.append(rec)
 
-            if not filtered_records:
-                st.info("No history rows match this username after filtering mixed-user records.")
-                return
-            records = filtered_records
+                if not filtered_records:
+                    st.info("No history rows match this username after filtering mixed-user records.")
+                    return
+                records = filtered_records
 
-            history_records_sorted = sorted(records, key=_record_season_id, reverse=True)
-            history_table_rows = []
-            for idx, record in enumerate(history_records_sorted):
-                season_label = record.get("season") or record.get("season_id") or "-"
-                scholar_pct = _record_scholar_pct(record)
-                totals = _aggregated_totals_from_record(record)
+                history_records_sorted = sorted(records, key=_record_season_id, reverse=True)
+                history_table_rows = []
+                for idx, record in enumerate(history_records_sorted):
+                    season_label = record.get("season") or record.get("season_id") or "-"
+                    scholar_pct = _record_scholar_pct(record)
+                    totals = _aggregated_totals_from_record(record)
 
-                payout_currency = record.get("payout_currency")
-                scholar_payout_value = record.get("scholar_payout")
-                if scholar_payout_value is not None:
-                    sps_price = prices.get("SPS") or prices.get("sps") or 0
-                    payout_display = f"{scholar_payout_value:,.2f} SPS (${scholar_payout_value * sps_price:,.2f})"
-                else:
-                    payout_display = _format_scholar_payout(
-                        str(payout_currency or "SPS"),
-                        totals,
-                        scholar_pct,
-                        prices,
+                    payout_currency = record.get("payout_currency")
+                    scholar_payout_value = record.get("scholar_payout")
+                    if scholar_payout_value is not None:
+                        sps_price = prices.get("SPS") or prices.get("sps") or 0
+                        payout_display = f"{scholar_payout_value:,.2f} SPS (${scholar_payout_value * sps_price:,.2f})"
+                    else:
+                        payout_display = _format_scholar_payout(
+                            str(payout_currency or "SPS"),
+                            totals,
+                            scholar_pct,
+                            prices,
+                        )
+
+                    history_table_rows.append(
+                        {
+                            "Season": season_label,
+                            "Ranked tokens": _format_token_amounts_dict(
+                                totals.ranked.token_amounts, prices
+                            ),
+                            "Tournament tokens": _format_token_amounts_dict(
+                                totals.tournament.token_amounts, prices
+                            ),
+                            "Brawl tokens": _format_token_amounts_dict(
+                                totals.brawl.token_amounts, prices
+                            ),
+                            "Overall tokens": _format_token_amounts_dict(
+                                totals.overall.token_amounts, prices
+                            ),
+                            "Scholar payout": payout_display,
+                            "Currency": payout_currency,
+                        }
                     )
 
-                history_table_rows.append(
-                    {
-                        "Season": season_label,
-                        "Ranked tokens": _format_token_amounts_dict(
-                            totals.ranked.token_amounts, prices
-                        ),
-                        "Tournament tokens": _format_token_amounts_dict(
-                            totals.tournament.token_amounts, prices
-                        ),
-                        "Brawl tokens": _format_token_amounts_dict(
-                            totals.brawl.token_amounts, prices
-                        ),
-                        "Overall tokens": _format_token_amounts_dict(
-                            totals.overall.token_amounts, prices
-                        ),
-                        "Scholar payout": payout_display,
-                        "Currency": payout_currency,
-                    }
-                )
+                if history_table_rows:
+                    with st.expander("Supabase raw rows (debug)", expanded=False):
+                        st.json(history_records_sorted)
 
-            if history_table_rows:
-                with st.expander("Supabase raw rows (debug)", expanded=False):
-                    st.json(history_records_sorted)
-
-                st.dataframe(
-                    history_table_rows,
-                    width="stretch",
-                    hide_index=True,
-                    column_config={
-                        "Ranked tokens": st.column_config.TextColumn(),
-                        "Tournament tokens": st.column_config.TextColumn(),
-                        "Brawl tokens": st.column_config.TextColumn(),
-                        "Overall tokens": st.column_config.TextColumn(),
-                    },
-                )
-
-                st.markdown("#### Update payout currency")
-                for idx, record in enumerate(history_records_sorted[:2]):
-                    stored_currency = str(record.get("payout_currency") or "SPS")
-                    default_currency = stored_currency if stored_currency in history_currency_options else history_currency_options[0]
-                    selection_key = f"history_currency_{normalized_history_username.lower()}_{_record_season_id(record)}_{idx}"
-                    cols = st.columns([1.5, 1.5, 2, 1])
-                    cols[0].markdown(f"**Season {_record_season_id(record)}**")
-                    cols[1].markdown(f"{record.get('season_start') or '-'} → {record.get('season_end') or '-'}")
-                    selected_currency = cols[2].selectbox(
-                        "Payout currency",
-                        options=history_currency_options,
-                        key=selection_key,
-                        index=history_currency_options.index(default_currency),
+                    st.dataframe(
+                        history_table_rows,
+                        width="stretch",
+                        hide_index=True,
+                        column_config={
+                            "Ranked tokens": st.column_config.TextColumn(),
+                            "Tournament tokens": st.column_config.TextColumn(),
+                            "Brawl tokens": st.column_config.TextColumn(),
+                            "Overall tokens": st.column_config.TextColumn(),
+                        },
                     )
-                    save_key = f"history_save_{normalized_history_username.lower()}_{_record_season_id(record)}_{idx}"
-                    if cols[3].button("Save currency", key=save_key):
-                        if update_season_currency(
-                            normalized_history_username, _record_season_id(record), selected_currency
-                        ):
-                            if feedback_key:
-                                st.session_state[feedback_key] = (
-                                    f"Scholar payout currency updated to {selected_currency} for season {_record_season_id(record)}."
-                                )
-                            st.experimental_rerun()  # type: ignore[attr-defined]
-                        else:
-                            cols[3].error("Failed to update the payout currency; check your Supabase configuration.")
+
+                    st.markdown("#### Update payout currency")
+                    for idx, record in enumerate(history_records_sorted[:2]):
+                        stored_currency = str(record.get("payout_currency") or "SPS")
+                        default_currency = stored_currency if stored_currency in history_currency_options else history_currency_options[0]
+                        selection_key = f"history_currency_{normalized_history_username.lower()}_{_record_season_id(record)}_{idx}"
+                        cols = st.columns([1.5, 1.5, 2, 1])
+                        cols[0].markdown(f"**Season {_record_season_id(record)}**")
+                        cols[1].markdown(f"{record.get('season_start') or '-'} → {record.get('season_end') or '-'}")
+                        selected_currency = cols[2].selectbox(
+                            "Payout currency",
+                            options=history_currency_options,
+                            key=selection_key,
+                            index=history_currency_options.index(default_currency),
+                        )
+                        save_key = f"history_save_{normalized_history_username.lower()}_{_record_season_id(record)}_{idx}"
+                        if cols[3].button("Save currency", key=save_key):
+                            if update_season_currency(
+                                normalized_history_username, _record_season_id(record), selected_currency
+                            ):
+                                if feedback_key:
+                                    st.session_state[feedback_key] = (
+                                        f"Scholar payout currency updated to {selected_currency} for season {_record_season_id(record)}."
+                                    )
+                                st.experimental_rerun()  # type: ignore[attr-defined]
+                            else:
+                                cols[3].error("Failed to update the payout currency; check your Supabase configuration.")
 
 
 def _merge_tournament_records(tournament_lists, season: int) -> list[dict]:

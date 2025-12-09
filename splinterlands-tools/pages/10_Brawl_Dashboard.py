@@ -71,8 +71,27 @@ def render_page() -> None:
         ]
         history_df = history[history_columns].copy()
 
+        def _style_history(df: pd.DataFrame) -> pd.DataFrame:
+            styles = pd.DataFrame("", index=df.index, columns=df.columns)
+            if "brawl_rank" in df.columns:
+                gold = "#f5da68"
+                silver = "#d7d9db"
+                bronze = "#d29b6f"
+                styles.loc[df["brawl_rank"] == 1, :] = (
+                    f"background-color: {gold}; color: #3a2a00; font-weight: 800;"
+                )
+                styles.loc[df["brawl_rank"] == 2, :] = (
+                    f"background-color: {silver}; color: #2f2f2f; font-weight: 700;"
+                )
+                styles.loc[df["brawl_rank"] == 3, :] = (
+                    f"background-color: {bronze}; color: #3a1f00; font-weight: 700;"
+                )
+            return styles
+
+        styled_history = history_df.style.apply(_style_history, axis=None)
+
         st.dataframe(
-            history_df,
+            styled_history,
             width="stretch",
             hide_index=True,
             height=400,
@@ -108,10 +127,25 @@ def render_page() -> None:
                         ["win_rate", "wins", "losses"],
                         ascending=[False, False, True],
                     )
+                    display_cols = ["player", "wins", "losses", "draws", "matches", "win_rate"]
+
+                    def _style_perfect_rows(df: pd.DataFrame) -> pd.DataFrame:
+                        styles = pd.DataFrame("", index=df.index, columns=df.columns)
+                        if "losses" in df.columns:
+                            mask = df["losses"] == 0
+                            styles.loc[mask, :] = (
+                                "background-color: #f5da68; color: #3a2a00; font-weight: 800;"
+                            )
+                        return styles
+
+                    styled_detail = (
+                        brawl_detail_df[display_cols]
+                        .style.format({"win_rate": "{:.2f}"})
+                        .apply(_style_perfect_rows, axis=None)
+                    )
+
                     st.dataframe(
-                        brawl_detail_df[
-                            ["player", "wins", "losses", "draws", "matches", "win_rate"]
-                        ],
+                        styled_detail,
                         width="stretch",
                         hide_index=True,
                         height=400,
