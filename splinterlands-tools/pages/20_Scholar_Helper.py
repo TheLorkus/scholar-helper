@@ -13,16 +13,12 @@ from features.scholar.service import (
     clear_caches,
     fetch_season_history,
     filter_tournaments_for_season,
-    get_last_supabase_error,
     get_supabase_client,
     parse_usernames,
     update_season_currency,
-    upsert_season_totals,
-    upsert_tournament_logs,
     _aggregated_totals_from_record,
     _build_currency_options,
     _format_price,
-    _format_rewards_list,
     _format_scholar_payout,
     _format_token_amounts_dict,
     _get_finish_for_tournament,
@@ -346,10 +342,6 @@ def render_page():
             history_table_rows = []
             for idx, record in enumerate(history_records_sorted):
                 season_label = record.get("season") or record.get("season_id") or "-"
-                season_start = record.get("season_start")
-                season_end = record.get("season_end")
-                season_start_str = season_start[:10] if isinstance(season_start, str) else "-"
-                season_end_str = season_end[:10] if isinstance(season_end, str) else "-"
                 scholar_pct = _record_scholar_pct(record)
                 totals = _aggregated_totals_from_record(record)
 

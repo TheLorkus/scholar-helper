@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import streamlit as st
-
 from core.config import setup_page
 from core.home import render_home
 

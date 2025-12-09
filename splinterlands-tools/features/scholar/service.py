@@ -7,14 +7,14 @@ from typing import Dict, List
 import streamlit as st
 
 from scholar_helper.models import AggregatedTotals, CategoryTotals, PriceQuotes, RewardEntry, SeasonWindow, TournamentResult
-from scholar_helper.services.aggregation import aggregate_totals, filter_tournaments_for_season
+from scholar_helper.services.aggregation import aggregate_totals, filter_tournaments_for_season  # noqa: F401
 from scholar_helper.services.api import (
     fetch_current_season,
     fetch_prices,
     fetch_tournaments,
     fetch_unclaimed_balance_history,
 )
-from scholar_helper.services.storage import (
+from scholar_helper.services.storage import (  # noqa: F401
     get_last_supabase_error,
     get_supabase_client,
     upsert_season_totals,
@@ -24,7 +24,8 @@ from scholar_helper.services.storage import (
 try:
     from scholar_helper.services.storage import fetch_season_history
 except ImportError:  # pragma: no cover - fallback for older deployments
-    fetch_season_history = lambda username: []
+    def fetch_season_history(username: str):
+        return []
 
 try:
     from scholar_helper.services.storage import update_season_currency
@@ -131,7 +132,7 @@ def _format_scholar_payout(
 
     target_price = prices.get(currency_key) or prices.get(currency_key.lower())
     if not target_price:
-        return f"-"
+        return "-"
     converted = usd_value / target_price if target_price else 0.0
     return f"{converted:,.2f} {currency_key} (${usd_value:,.2f})"
 

@@ -9,7 +9,6 @@ from features.brawl.service import (
     DEFAULT_GUILD_ID,
     build_player_rows,
     compute_player_stats,
-    fetch_brawl_details,
     fetch_guild_brawls,
 )
 

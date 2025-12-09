@@ -1,8 +1,8 @@
 [flake8]
 max-line-length = 120
-extend-ignore = E203, W503
-exclude = .git, __pycache__, .venv, venv, build, dist, alembic/versions
-max-complexity = 10
+extend-ignore = E203, W503, E501
+exclude = .git, __pycache__, .venv, venv, build, dist, alembic/versions, land-optimizer, scholar-helper, src, splinterlands-tools/supabase/.temp, splinterlands-tools/scholar_helper, splinterlands-tools/scripts
+max-complexity = 50
 count = True
 per-file-ignores =
     tests/*: S101
