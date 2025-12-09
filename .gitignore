@@ -12,3 +12,6 @@ app.db
 .DS_Store
 /land-optimizer/
 .write-check
+
+# Supabase CLI temp files
+supabase/.temp/
