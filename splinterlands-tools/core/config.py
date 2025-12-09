@@ -15,3 +15,12 @@ def setup_page(title: str, layout: str = "wide") -> None:
         load_dotenv()
         os.environ[_ENV_LOADED_FLAG] = "1"
     st.set_page_config(page_title=title, layout=layout)
+    # Hide the implicit main page entry in the sidebar nav.
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebarNav"] li:first-child {display: none !important;}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
