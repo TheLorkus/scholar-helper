@@ -46,7 +46,7 @@
      - Only render when `scholar_mode` is True.
 
 3) **Code refactor**
-   - Split rendering helpers in `pages/20_Scholar_Helper.py`:
+   - Split rendering helpers in `pages/20_Rewards_Tracker.py`:
      - `render_account_summary(...)` (always)
      - `render_scholar_controls(...)` (only when scholar_mode)
      - `render_scholar_history(...)` (only when scholar_mode)
