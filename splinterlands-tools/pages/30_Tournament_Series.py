@@ -10,6 +10,7 @@ from scholar_helper.services.storage import (
     fetch_tournament_results_supabase,
     fetch_tournament_ingest_organizers,
     fetch_series_configs,
+    fetch_point_schemes,
     get_last_supabase_error,
 )
 
@@ -53,6 +54,27 @@ def _as_float(value):
         return float(value)
     except Exception:
         return None
+
+
+def _render_scheme_rules(scheme: dict) -> list[dict]:
+    rules = scheme.get("rules") or []
+    rows = []
+    mode = scheme.get("mode")
+    base_points = scheme.get("base_points")
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        row: dict = {
+            "Min": rule.get("min"),
+            "Max": rule.get("max"),
+        }
+        if mode == "multiplier":
+            row["Base"] = base_points
+            row["Multiplier"] = rule.get("multiplier")
+        else:
+            row["Points"] = rule.get("points")
+        rows.append(row)
+    return rows
 
 
 def render_page() -> None:
@@ -233,22 +255,49 @@ def render_page() -> None:
                 ruleset_title = ruleset_title.replace("Type:", "").strip()
             ruleset_title = ruleset_title.split(" - ")[0].strip() or "Full"
         tournament_count = len(tournaments)
-        st.subheader(
-            f"{ruleset_title} Series Leaderboard hosted by {username} ({scheme_label} points) - aggregated over {tournament_count} tournaments"
-        )
-        st.dataframe(
-            total_rows,
-            hide_index=True,
-            width="stretch",
-            column_config={
-                "Player": st.column_config.TextColumn(),
-                "Points": st.column_config.NumberColumn(format="%.0f"),
-                "Events": st.column_config.NumberColumn(format="%d"),
-                "Avg Finish": st.column_config.NumberColumn(format="%.2f"),
-                "Best": st.column_config.NumberColumn(format="%d"),
-                "Podiums": st.column_config.NumberColumn(format="%d"),
-            },
-        )
+        tabs = st.tabs(["Leaderboard", "Point schemes"])
+        with tabs[0]:
+            st.subheader(
+                f"{ruleset_title} Series Leaderboard hosted by {username} ({scheme_label} points) - aggregated over {tournament_count} tournaments"
+            )
+            st.dataframe(
+                total_rows,
+                hide_index=True,
+                width="stretch",
+                column_config={
+                    "Player": st.column_config.TextColumn(),
+                    "Points": st.column_config.NumberColumn(format="%.0f"),
+                    "Events": st.column_config.NumberColumn(format="%d"),
+                    "Avg Finish": st.column_config.NumberColumn(format="%.2f"),
+                    "Best": st.column_config.NumberColumn(format="%d"),
+                    "Podiums": st.column_config.NumberColumn(format="%d"),
+                },
+            )
+        with tabs[1]:
+            st.subheader("Point Schemes")
+            schemes = fetch_point_schemes()
+            if not schemes:
+                st.info("No point schemes found in Supabase.")
+            else:
+                for scheme in schemes:
+                    st.markdown(f"**{scheme.get('label') or scheme.get('slug')}** ({scheme.get('mode')})")
+                    st.caption(
+                        f"Base points: {scheme.get('base_points')}, DNP points: {scheme.get('dnp_points')}"
+                    )
+                    rows = _render_scheme_rules(scheme)
+                    st.dataframe(
+                        rows,
+                        hide_index=True,
+                        width="stretch",
+                        column_config={
+                            "Min": st.column_config.NumberColumn(format="%d"),
+                            "Max": st.column_config.NumberColumn(format="%d"),
+                            "Base": st.column_config.NumberColumn(format="%.0f"),
+                            "Multiplier": st.column_config.NumberColumn(format="%.2f"),
+                            "Points": st.column_config.NumberColumn(format="%.0f"),
+                        },
+                    )
+                    st.divider()
     else:
         st.info("No leaderboard rows found for the selected window.")
 

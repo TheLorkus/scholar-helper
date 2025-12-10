@@ -133,6 +133,7 @@ def _to_iso(dt: datetime | str | None) -> Optional[str]:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.isoformat()
 
+
 def upsert_season_totals(
     season: SeasonWindow,
     username: str,
@@ -302,6 +303,14 @@ def fetch_series_configs(organizer: str | None = None) -> list[Dict[str, object]
     if organizer:
         params["organizer"] = f"eq.{organizer}"
     return _supabase_fetch(SERIES_CONFIGS_TABLE, params)
+
+
+def fetch_point_schemes() -> list[Dict[str, object]]:
+    """
+    Fetch available point schemes (public).
+    """
+    params: Dict[str, object] = {"order": "slug.asc"}
+    return _supabase_fetch("point_schemes", params)
 
 
 def fetch_tournament_leaderboard_totals_supabase(
