@@ -49,6 +49,16 @@ class TournamentResult:
 
 
 @dataclass
+class HostedTournament:
+    id: str
+    name: str
+    start_date: Optional[datetime]
+    allowed_cards: Dict[str, object] = field(default_factory=dict)
+    payouts: List[Dict[str, object]] = field(default_factory=list)
+    raw: Dict[str, object] = field(default_factory=dict)
+
+
+@dataclass
 class RewardEntry:
     id: str
     player: str

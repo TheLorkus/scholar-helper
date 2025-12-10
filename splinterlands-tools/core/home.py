@@ -11,8 +11,9 @@ def render_home() -> None:
     st.page_link("app.py", label="Home (current)", icon="🏠")
     st.page_link("pages/10_Brawl_Dashboard.py", label="Brawl Dashboard", icon="🛡️")
     st.page_link("pages/20_Rewards_Tracker.py", label="Rewards Tracker", icon="🎓")
+    st.page_link("pages/30_Tournament_Series.py", label="Tournament Series", icon="🏆")
 
     st.markdown("### Coming soon")
-    st.page_link("pages/30_SPS_Analytics.py", label="SPS Analytics", icon="📈")
+    st.page_link("pages/40_SPS_Analytics.py", label="SPS Analytics", icon="📈")
 
     st.info("Use the sidebar to switch between pages at any time.")

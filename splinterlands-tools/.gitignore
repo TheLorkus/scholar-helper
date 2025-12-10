@@ -20,3 +20,11 @@ __pycache__/
 # Local data
 data/*.json
 data/*.csv
+
+# Supabase CLI artifacts
+supabase/.temp/
+
+# Local docs/scripts not for git
+planning_doc
+scripts/ingest_tournament_results.py
+docs/tournament_ingest_admin.md

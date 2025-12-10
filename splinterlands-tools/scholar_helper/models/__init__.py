@@ -1,6 +1,7 @@
 from .types import (
     AggregatedTotals,
     CategoryTotals,
+    HostedTournament,
     PriceQuotes,
     RewardEntry,
     SeasonWindow,
@@ -11,6 +12,7 @@ from .types import (
 __all__ = [
     "AggregatedTotals",
     "CategoryTotals",
+    "HostedTournament",
     "PriceQuotes",
     "RewardEntry",
     "SeasonWindow",
