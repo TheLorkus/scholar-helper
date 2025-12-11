@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, date
+import pandas as pd
 
 import streamlit as st
 
@@ -112,8 +113,9 @@ def render_page() -> None:
         scheme_label = st.selectbox("Point scheme", options=list(scheme_options.keys()), index=0)
         scheme = scheme_options[scheme_label]
     with col2:
-        since_date = st.date_input("Start date (optional)", value=None)
+        name_filter = st.text_input("Tournament name (optional, partial match)", value="")
     with col3:
+        since_date = st.date_input("Start date (optional)", value=None)
         until_date = st.date_input("End date (optional)", value=None)
 
     # Apply config overrides if selected.
@@ -161,6 +163,15 @@ def render_page() -> None:
         tournaments = [t for t in tournaments if _format_ruleset(t.get("allowed_cards")) == selected_ruleset]
         if not tournaments:
             st.info("No tournaments match that ruleset for the selected filters.")
+            return
+
+    if name_filter:
+        name_lower = name_filter.lower()
+        tournaments = [
+            t for t in tournaments if name_lower in str(t.get("name") or t.get("tournament_id") or "").lower()
+        ]
+        if not tournaments:
+            st.info("No tournaments match that name for the selected filters.")
             return
 
     # Filter by include/exclude ids from config.
@@ -249,7 +260,9 @@ def render_page() -> None:
 
         total_rows.sort(key=lambda r: r["Points"], reverse=True)
         ruleset_title = "Full"
-        if selected_ruleset != "All rulesets":
+        if name_filter:
+            ruleset_title = name_filter.strip().capitalize()
+        elif selected_ruleset != "All rulesets":
             ruleset_title = selected_ruleset
             if ruleset_title.lower().startswith("type:"):
                 ruleset_title = ruleset_title.replace("Type:", "").strip()
@@ -260,8 +273,57 @@ def render_page() -> None:
             st.subheader(
                 f"{ruleset_title} Series Leaderboard hosted by {username} ({scheme_label} points) - aggregated over {tournament_count} tournaments"
             )
+            threshold = st.number_input(
+                f"Qualification threshold ({scheme_label} points)",
+                min_value=0.0,
+                value=0.0,
+                step=1.0,
+                help="Draw a red line showing who meets the cutoff.",
+            )
+            df = pd.DataFrame(total_rows)
+            styler = df.style
+            if threshold > 0:
+                # Ticket marker for qualifiers (emoji color depends on platform; 🎫 is usually gold/yellow).
+                ticket_icon = "🎫"
+                df.loc[df["Points"] >= threshold, "Player"] = (
+                    ticket_icon + " " + df.loc[df["Points"] >= threshold, "Player"].astype(str)
+                )
+                qualifying = df[df["Points"] >= threshold]
+                if not qualifying.empty:
+                    cutoff_idx = qualifying.index[-1]
+                    sentinel = {
+                        "Player": f"Cutoff at {threshold:.0f} pts",
+                        "Points": None,
+                        "Events": None,
+                        "Avg Finish": None,
+                        "Best": None,
+                        "Podiums": None,
+                    }
+                    df = pd.concat(
+                        [df.iloc[: cutoff_idx + 1], pd.DataFrame([sentinel]), df.iloc[cutoff_idx + 1 :]],
+                        ignore_index=True,
+                    )
+                    mask = df["Player"].astype(str).str.startswith("Cutoff at")
+                    df.loc[mask, ["Points", "Events", "Avg Finish", "Best", "Podiums"]] = ""
+
+                    def _highlight_cutoff(row):
+                        if str(row.get("Player", "")).startswith("Cutoff at"):
+                            return [
+                                (
+                                    "background-color: #5f0000; color: #ffffff; font-weight: bold; "
+                                    "padding-top: 0px; padding-bottom: 0px; line-height: 0.7em; font-size: 0.9em;"
+                                )
+                            ] * len(row)
+                        return [""] * len(row)
+
+                    styler = df.style.apply(_highlight_cutoff, axis=1)
+                    st.caption(
+                        f"Red bar marks cutoff at {threshold:.0f} points ({len(qualifying)} qualified)."
+                    )
+                else:
+                    st.caption(f"No entries meet the {threshold:.0f}-point threshold.")
             st.dataframe(
-                total_rows,
+                styler,
                 hide_index=True,
                 width="stretch",
                 column_config={
