@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from core.config import setup_page
+from scholar_helper.services.api import fetch_hosted_tournaments, fetch_tournament_leaderboard
 from scholar_helper.services.storage import (
     fetch_tournament_events_supabase,
     fetch_tournament_results_supabase,
@@ -17,6 +18,56 @@ from scholar_helper.services.storage import (
 
 
 setup_page("Tournament Series")
+
+# Local fallback definitions in case point schemes are unavailable from Supabase.
+DEFAULT_POINT_SCHEMES = {
+    "balanced": {
+        "slug": "balanced",
+        "label": "Balanced",
+        "mode": "fixed",
+        "base_points": 0,
+        "dnp_points": 0,
+        "rules": [
+            {"min": 1, "max": 1, "points": 25},
+            {"min": 2, "max": 2, "points": 18},
+            {"min": 3, "max": 4, "points": 12},
+            {"min": 5, "max": 8, "points": 8},
+            {"min": 9, "max": 16, "points": 5},
+            {"min": 17, "max": None, "points": 2},
+        ],
+    },
+    "performance": {
+        "slug": "performance",
+        "label": "Performance-Focused",
+        "mode": "fixed",
+        "base_points": 0,
+        "dnp_points": 0,
+        "rules": [
+            {"min": 1, "max": 1, "points": 50},
+            {"min": 2, "max": 2, "points": 30},
+            {"min": 3, "max": 3, "points": 20},
+            {"min": 4, "max": 4, "points": 15},
+            {"min": 5, "max": 8, "points": 10},
+            {"min": 9, "max": 16, "points": 5},
+            {"min": 17, "max": None, "points": 1},
+        ],
+    },
+    "participation": {
+        "slug": "participation",
+        "label": "Participation",
+        "mode": "multiplier",
+        "base_points": 1,
+        "dnp_points": 0,
+        "rules": [
+            {"min": 1, "max": 1, "multiplier": 3.0},
+            {"min": 2, "max": 2, "multiplier": 2.5},
+            {"min": 3, "max": 4, "multiplier": 2.0},
+            {"min": 5, "max": 8, "multiplier": 1.5},
+            {"min": 9, "max": 16, "multiplier": 1.2},
+            {"min": 17, "max": None, "multiplier": 1.0},
+        ],
+    },
+}
 
 
 def _format_date(value: datetime | None) -> str:
@@ -78,20 +129,140 @@ def _render_scheme_rules(scheme: dict) -> list[dict]:
     return rows
 
 
+def _resolve_scheme(scheme_map: dict[str, dict], slug: str) -> dict:
+    """Pick the scheme definition by slug with a fallback to defaults."""
+    return scheme_map.get(slug) or DEFAULT_POINT_SCHEMES.get(slug, {})
+
+
+def _calculate_points_for_finish(finish: int | None, scheme: dict) -> float | None:
+    """Mirror the Supabase calculate_points_for_finish() logic in Python."""
+    if not scheme:
+        return None
+    mode = str(scheme.get("mode") or "fixed").lower()
+    base_points = float(scheme.get("base_points") or 0)
+    dnp_points = float(scheme.get("dnp_points") or 0)
+    rules = scheme.get("rules") or []
+    if finish is None:
+        return dnp_points
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        min_place = rule.get("min")
+        max_place = rule.get("max")
+        if min_place is None:
+            continue
+        try:
+            min_val = int(min_place)
+            max_val = int(max_place) if max_place is not None else None
+        except Exception:
+            continue
+        if finish < min_val:
+            continue
+        if max_val is not None and finish > max_val:
+            continue
+        if mode == "multiplier":
+            multiplier = float(rule.get("multiplier") or 1)
+            return base_points * multiplier
+        points = float(rule.get("points") or 0)
+        return base_points + points
+    return dnp_points
+
+
+def _fetch_tournaments_from_api(
+    organizer: str, since: datetime | None, until: datetime | None, limit: int
+) -> list[dict]:
+    """Live fallback: pull hosted tournaments directly from the Splinterlands API."""
+    try:
+        hosted = fetch_hosted_tournaments(organizer)
+    except Exception:
+        return []
+    filtered: list[dict] = []
+    for t in hosted:
+        start_date = t.start_date
+        if since and start_date and start_date < since:
+            continue
+        if until and start_date and start_date > until:
+            continue
+        filtered.append(
+            {
+                "tournament_id": t.id,
+                "organizer": organizer,
+                "name": t.name,
+                "start_date": t.start_date,
+                "allowed_cards": t.allowed_cards,
+                "payouts": t.payouts,
+                "raw": t.raw,
+            }
+        )
+    if limit and len(filtered) > limit:
+        filtered = filtered[:limit]
+    return filtered
+
+
+def _fetch_results_from_api(
+    tournaments: list[dict],
+    organizer: str,
+    points_key: str,
+    scheme: dict,
+) -> tuple[list[dict], dict[str, list[dict]]]:
+    """
+    Pull player results from the API and compute points locally for custom organizers.
+    Returns (flat list, by_event_id map).
+    """
+    all_rows: list[dict] = []
+    by_event: dict[str, list[dict]] = {}
+    for t in tournaments:
+        tid = t.get("tournament_id")
+        if not tid:
+            continue
+        payouts = t.get("payouts") or []
+        try:
+            leaderboard = fetch_tournament_leaderboard(tid, organizer, payouts=payouts)
+        except Exception:
+            leaderboard = []
+        for entry in leaderboard:
+            if not isinstance(entry, dict):
+                continue
+            finish = entry.get("finish")
+            try:
+                finish_val = int(finish) if finish is not None else None
+            except Exception:
+                finish_val = None
+            points = _calculate_points_for_finish(finish_val, scheme)
+            row = {
+                "tournament_id": tid,
+                "player": entry.get("player"),
+                "finish": finish_val,
+                "prize_text": entry.get("prize") or entry.get("prize_text"),
+                points_key: points,
+            }
+            all_rows.append(row)
+            by_event.setdefault(tid, []).append(row)
+    return all_rows, by_event
+
+
 def render_page() -> None:
     st.title("Tournament Series")
     st.caption("Supabase-backed list of hosted tournaments with stored leaderboards.")
 
     organizers = fetch_tournament_ingest_organizers()
-    selected_org = st.selectbox(
-        "Organizer",
-        options=organizers + ["(custom)"] if organizers else ["(custom)"],
-        index=0,
-    )
-    custom_username = ""
-    if selected_org == "(custom)":
-        custom_username = st.text_input("Custom organizer username").strip()
-    username = custom_username or (selected_org if selected_org != "(custom)" else "").strip()
+    col_org_1, col_org_2 = st.columns(2)
+    with col_org_1:
+        selected_org = st.selectbox(
+            "Organizer (known list)",
+            options=organizers if organizers else ["(none)"],
+            index=0,
+            help="Pick a seeded organizer or type any username to load tournaments.",
+        )
+    with col_org_2:
+        typed_username = st.text_input(
+            "Or type any organizer username",
+            placeholder="e.g., sps.tournaments",
+            help="Press Enter or click Load to fetch tournaments from Supabase/API.",
+        ).strip()
+    load_clicked = st.button("Load tournaments", type="primary")
+
+    username = typed_username or (selected_org if selected_org and selected_org != "(none)" else "")
 
     configs = fetch_series_configs(username) if username else []
     config_labels = ["(No saved config)"] + [cfg.get("name") or str(cfg.get("id")) for cfg in configs]
@@ -132,9 +303,17 @@ def render_page() -> None:
             until_date = selected_config.get("include_before") or until_date
             include_ids = selected_config.get("include_ids") or []
             exclude_ids = set(selected_config.get("exclude_ids") or [])
+            # Normalize label to match the overridden scheme.
+            scheme_label = next((label for label, slug in scheme_options.items() if slug == scheme), scheme_label)
+
+    schemes = fetch_point_schemes()
+    scheme_map = {s.get("slug"): s for s in schemes} if schemes else {}
+    scheme_def = _resolve_scheme(scheme_map, scheme)
 
     limit = st.slider("Limit to last N events (0 = all after filters)", min_value=0, max_value=100, value=20)
 
+    source = "supabase"
+    results_by_event: dict[str, list[dict]] = {}
     with st.spinner(f"Loading tournaments ingested for {username}..."):
         tournaments = fetch_tournament_events_supabase(
             username,
@@ -142,16 +321,26 @@ def render_page() -> None:
             until=_parse_date(until_date),
             limit=200,
         )
-    if not tournaments:
-        error = get_last_supabase_error()
-        if error:
-            st.error(f"Supabase query failed: {error}")
-        else:
-            st.info("No tournaments found for that organizer in Supabase. Ingest first, then refresh.")
-        return
+    supabase_error = get_last_supabase_error() if not tournaments else None
+
+    # Live API fallback for any organizer when Supabase has no rows yet.
+    if not tournaments and username:
+        with st.spinner(f"Fetching tournaments for {username} from Splinterlands..."):
+            tournaments = _fetch_tournaments_from_api(
+                organizer=username,
+                since=_parse_date(since_date),
+                until=_parse_date(until_date),
+                limit=200,
+            )
+        if tournaments:
+            source = "api"
+            supabase_error = None
 
     if not tournaments:
-        st.info("No tournaments found for that organizer.")
+        if supabase_error:
+            st.error(f"Supabase query failed: {supabase_error}")
+        else:
+            st.info("No tournaments found for that organizer. Ingest first, then refresh.")
         return
 
     # Optional ruleset filter derived from available allowed_cards.
@@ -215,13 +404,22 @@ def render_page() -> None:
 
     event_ids = [t.get("tournament_id") for t in tournaments if t.get("tournament_id")]
 
-    with st.spinner("Computing series leaderboard..."):
-        result_rows = fetch_tournament_results_supabase(
-            tournament_ids=event_ids,
-            organizer=username,
-            since=_parse_date(since_date),
-            until=_parse_date(until_date),
-        )
+    if source == "supabase":
+        with st.spinner("Computing series leaderboard..."):
+            result_rows = fetch_tournament_results_supabase(
+                tournament_ids=event_ids,
+                organizer=username,
+                since=_parse_date(since_date),
+                until=_parse_date(until_date),
+            )
+    else:
+        with st.spinner("Computing series leaderboard from live API..."):
+            result_rows, results_by_event = _fetch_results_from_api(
+                tournaments,
+                organizer=username,
+                points_key=points_key,
+                scheme=scheme_def,
+            )
 
     if result_rows:
         totals_map: dict[str, dict[str, object]] = {}
@@ -337,16 +535,16 @@ def render_page() -> None:
             )
         with tabs[1]:
             st.subheader("Point Schemes")
-            schemes = fetch_point_schemes()
-            if not schemes:
+            schemes_for_tab = schemes or fetch_point_schemes()
+            if not schemes_for_tab:
                 st.info("No point schemes found in Supabase.")
             else:
-                for scheme in schemes:
-                    st.markdown(f"**{scheme.get('label') or scheme.get('slug')}** ({scheme.get('mode')})")
+                for scheme_obj in schemes_for_tab:
+                    st.markdown(f"**{scheme_obj.get('label') or scheme_obj.get('slug')}** ({scheme_obj.get('mode')})")
                     st.caption(
-                        f"Base points: {scheme.get('base_points')}, DNP points: {scheme.get('dnp_points')}"
+                        f"Base points: {scheme_obj.get('base_points')}, DNP points: {scheme_obj.get('dnp_points')}"
                     )
-                    rows = _render_scheme_rules(scheme)
+                    rows = _render_scheme_rules(scheme_obj)
                     st.dataframe(
                         rows,
                         hide_index=True,
@@ -375,8 +573,11 @@ def render_page() -> None:
     selected_idx = labels.index(selected_label)
     selected = tournaments[selected_idx]
     tournament_id = selected.get("tournament_id") or selected.get("id")
-    with st.spinner(f"Loading leaderboard for {selected.get('name') or tournament_id}..."):
-        leaderboard = fetch_tournament_results_supabase(tournament_id)
+    if source == "supabase":
+        with st.spinner(f"Loading leaderboard for {selected.get('name') or tournament_id}..."):
+            leaderboard = fetch_tournament_results_supabase(tournament_id)
+    else:
+        leaderboard = results_by_event.get(tournament_id) or []
     if leaderboard:
         st.dataframe(
             [
