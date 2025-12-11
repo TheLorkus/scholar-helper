@@ -264,6 +264,10 @@ def render_page() -> None:
 
     username = typed_username or (selected_org if selected_org and selected_org != "(none)" else "")
 
+    if load_clicked and not username:
+        st.warning("Enter or select an organizer, then click Load.")
+        return
+
     configs = fetch_series_configs(username) if username else []
     config_labels = ["(No saved config)"] + [cfg.get("name") or str(cfg.get("id")) for cfg in configs]
     selected_config_label = st.selectbox("Series config (optional)", options=config_labels, index=0)
