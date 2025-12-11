@@ -105,10 +105,10 @@ def render_page():
     with tab_summary:
         col1, col2, col3 = st.columns([2, 1, 1])
         with col1:
-            usernames_raw = st.text_input("Usernames (comma separated)", value="lorkus,vorkus")
+            usernames_raw = st.text_input("Usernames (comma separated)", value="")
         with col2:
             scholar_pct = (
-                st.number_input("Scholar share (%)", min_value=0, max_value=100, value=50, step=5)
+                st.number_input("Scholar share (%)", min_value=0, max_value=100, value=0, step=5)
                 if scholar_mode
                 else 0
             )
@@ -259,7 +259,7 @@ def render_page():
     with tab_tournaments:
         st.markdown("### Tournament lookup")
         lookup_username = st.text_input(
-            "Tournament username", value=(usernames[0] if usernames else "lorkus")
+            "Tournament username", value=(usernames[0] if usernames else "")
         )
         if lookup_username.strip():
             with st.spinner(f"Loading tournaments for {lookup_username}..."):
@@ -315,7 +315,7 @@ def render_page():
             if supabase_client is None:
                 st.warning("Supabase is not configured. Check environment variables or connectivity.")
             else:
-                history_username_raw = st.text_input("History username", value="lorkus")
+                history_username_raw = st.text_input("History username", value="")
                 normalized_history_username = history_username_raw.lower().strip()
                 history_currency_options = ["SPS", "USD", "DEC", "ETH", "HIVE", "BTC", "VOUCHER"]
                 feedback_key = f"history_feedback_{normalized_history_username}"
