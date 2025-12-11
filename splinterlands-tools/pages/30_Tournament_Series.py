@@ -342,6 +342,14 @@ def render_page() -> None:
         else:
             st.info("No tournaments found for that organizer. Ingest first, then refresh.")
         return
+    else:
+        if source == "api":
+            st.info(
+                "Using live Splinterlands API data for this organizer (not yet in Supabase). "
+                "Points are computed locally with the selected scheme."
+            )
+        else:
+            st.caption("Loaded tournaments from Supabase.")
 
     # Optional ruleset filter derived from available allowed_cards.
     ruleset_labels = sorted({(_format_ruleset(t.get("allowed_cards")) or "-") for t in tournaments})
