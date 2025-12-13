@@ -3,7 +3,15 @@ from __future__ import annotations
 import streamlit as st
 
 from core.config import render_footer, setup_page
-from scholar_helper.services.storage import refresh_tournament_ingest_all, get_last_supabase_error
+try:
+    from scholar_helper.services.storage import refresh_tournament_ingest_all, get_last_supabase_error
+except ImportError:
+    # Fallback to avoid app crash if the helper isn't available in the runtime.
+    def refresh_tournament_ingest_all(max_age_days: int = 3) -> bool:  # type: ignore
+        return False
+
+    def get_last_supabase_error() -> str:  # type: ignore
+        return "Helper not available"
 from series import leaderboard, tournament
 
 
@@ -33,7 +41,7 @@ def render_page() -> None:
                 st.success("Tournament data refresh kicked off.")
             else:
                 st.error(f"Failed to trigger refresh: {get_last_supabase_error() or 'Unknown error'}")
-        st.caption("Pulls the latest API data for all configured organizers and stores it locally.")
+        st.caption("Refreshes the last 3 days of organizer tournaments into the database.")
 
     view = st.session_state.get("__series_view", "leaderboard")
     view = st.radio(
