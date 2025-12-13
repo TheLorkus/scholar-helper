@@ -315,6 +315,7 @@ def render_page() -> None:
             scheme = selected_config.get("point_scheme") or scheme
             since_date = selected_config.get("include_after") or since_date
             until_date = selected_config.get("include_before") or until_date
+            name_filter = selected_config.get("name_filter") or name_filter
             include_ids = selected_config.get("include_ids") or []
             exclude_ids = set(selected_config.get("exclude_ids") or [])
             # Normalize label to match the overridden scheme.
@@ -630,12 +631,14 @@ def render_page() -> None:
         "name": (selected_config.get("name") if selected_config else None) or "(name this config)",
         "organizer": username,
         "point_scheme": scheme,
+        "name_filter": name_filter or (selected_config.get("name_filter") if selected_config else None) or "",
         "include_ids": list(include_ids) if include_ids else [],
         "exclude_ids": sorted(exclude_ids) if exclude_ids else [],
         "include_after": include_after_iso,
         "include_before": include_before_iso,
         "visibility": (selected_config.get("visibility") if selected_config else None) or "public",
         "note": selected_config.get("note") if selected_config else None,
+        "qualification_cutoff": selected_config.get("qualification_cutoff") if selected_config else None,
     }
     st.subheader("Copy/paste series config")
     st.caption("Use this JSON payload to insert into series_configs via Supabase or helper scripts.")

@@ -58,11 +58,11 @@ def render_page() -> None:
     st.title("Series Leaderboard")
     st.caption("Read-only leaderboard powered by a saved series config (no extra filters).")
 
-    params = st.experimental_get_query_params()
-    qp_org = (params.get("organizer") or params.get("org") or [""])[0]
-    qp_config = (params.get("config") or params.get("name") or params.get("id") or [""])[0]
+    params = st.query_params
+    default_org = params.get("organizer") or params.get("org") or "lorkus"
+    default_config = params.get("config") or params.get("name") or params.get("id") or "Delegated & Dangerous"
 
-    organizer = st.text_input("Organizer", value=qp_org, placeholder="e.g., lorkus or clove71").strip()
+    organizer = st.text_input("Organizer", value=default_org, placeholder="e.g., lorkus or clove71").strip()
     if not organizer:
         st.info("Enter an organizer to load their saved series configs.")
         return
@@ -78,9 +78,9 @@ def render_page() -> None:
 
     config_labels = [c.get("name") or str(c.get("id")) for c in configs]
     default_idx = 0
-    if qp_config:
+    if default_config:
         for idx, cfg in enumerate(configs):
-            if qp_config in (cfg.get("name"), str(cfg.get("id"))):
+            if default_config in (cfg.get("name"), str(cfg.get("id"))):
                 default_idx = idx
                 break
     selected_label = st.selectbox("Config", options=config_labels, index=default_idx)
