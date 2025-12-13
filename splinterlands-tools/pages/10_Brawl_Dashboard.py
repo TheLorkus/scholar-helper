@@ -65,10 +65,20 @@ def render_page() -> None:
     with st.spinner("Fetching player data for recent brawls..."):
         player_rows = build_player_rows(guild_id, history, max_brawls=40)
 
+    selected_guild_info = None
+    try:
+        all_guilds = fetch_guild_list()
+        selected_guild_info = next((g for g in all_guilds if g.get("id") == guild_id), None)
+    except Exception:
+        selected_guild_info = None
+    guild_label = (str(selected_guild_info.get("name") or "").strip() or guild_id).strip()
+    guild_url = f"https://next.splinterlands.com/guild/{guild_id}?tab=about"
+    st.info(f"Viewing **{guild_label}** · [Open guild page]({guild_url})")
+
     tabs = st.tabs(["Brawl history", "Player stats", "Guild trends"])
 
     with tabs[0]:
-        st.subheader("Brawl history summary")
+        st.subheader(f"{guild_label} Brawl History Summary")
 
         history_columns = [
             col
@@ -88,12 +98,6 @@ def render_page() -> None:
             if col in history.columns
         ]
         history_df = history[history_columns].copy()
-        selected_guild_info = None
-        try:
-            all_guilds = fetch_guild_list()
-            selected_guild_info = next((g for g in all_guilds if g.get("id") == guild_id), None)
-        except Exception:
-            selected_guild_info = None
         if selected_guild_info:
             info_cols = ["owner", "motto", "level", "brawl_status", "num_members", "rank"]
             info_rows = {col: selected_guild_info.get(col, "") for col in info_cols}
@@ -223,7 +227,7 @@ def render_page() -> None:
                     )
 
     with tabs[1]:
-        st.subheader("Player stats over window")
+        st.subheader(f"{guild_label} Player Stats Over Window")
 
         window_brawls = st.slider(
             "Number of recent brawls to analyze (player stats only)",
@@ -251,7 +255,7 @@ def render_page() -> None:
                 )
 
     with tabs[2]:
-        st.subheader("Guild trends")
+        st.subheader(f"{guild_label} Brawl Trends")
         st.caption(f"Showing the last {TREND_CYCLE_LIMIT} cycles.")
 
         cycles = sorted(history["cycle"].dropna().unique(), reverse=True)[:TREND_CYCLE_LIMIT]
