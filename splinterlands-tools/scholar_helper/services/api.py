@@ -183,7 +183,7 @@ def _infer_prizes_from_payouts(payouts: List[Dict[str, object]], finish: Optiona
     return prizes
 
 
-def fetch_tournaments(username: str, limit: int = 20) -> List[TournamentResult]:
+def fetch_tournaments(username: str, limit: int | None = 200) -> List[TournamentResult]:
     url = f"https://api.splinterlands.com/tournaments/completed?username={username}"
     resp = _client.get(url)
     resp.raise_for_status()
@@ -198,7 +198,7 @@ def fetch_tournaments(username: str, limit: int = 20) -> List[TournamentResult]:
 
     # Sort newest-first so the limit keeps the most recent events.
     filtered.sort(key=_list_payload_sort_key, reverse=True)
-    if limit:
+    if limit and limit > 0:
         filtered = filtered[:limit]
 
     for raw in filtered:

@@ -82,6 +82,11 @@ def main() -> None:
         default=os.getenv("SYNC_PAYOUT_CURRENCY", "SPS"),
         help="Payout currency recorded with the season snapshot.",
     )
+    parser.add_argument(
+        "--run-now",
+        action="store_true",
+        help="Run immediately once and exit (no long sleep until season end).",
+    )
     args = parser.parse_args()
 
     usernames = _parse_usernames(args.usernames) or _parse_usernames(os.getenv("SYNC_USERNAMES"))
@@ -90,7 +95,12 @@ def main() -> None:
         sys.exit(1)
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
-    logging.info("Starting seasonal sync daemon for users: %s", ", ".join(usernames))
+    logging.info("Starting seasonal sync%s for users: %s", " (run-now)" if args.run_now else " daemon", ", ".join(usernames))
+
+    if args.run_now:
+        season = fetch_current_season()
+        _sync_for_season(season, usernames, args.scholar_pct, args.currency)
+        return
 
     while True:
         try:
