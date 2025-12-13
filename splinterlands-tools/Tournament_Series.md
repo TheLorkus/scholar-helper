@@ -6,6 +6,7 @@
 - Optional: choose a **Series config** to load saved include/exclude IDs, date window, and point scheme; otherwise set filters manually (point scheme, name search, start/end date, ruleset filter, include/exclude IDs, limit to N most recent).
 - The events table lists date, tournament name, and ruleset; use the **Leaderboard** tab to see series standings with a qualification cutoff line, and the **View leaderboard** dropdown to inspect a single event’s placements/prizes.
 - The **Point schemes** tab shows the scoring tables currently stored in Supabase.
+- JSON export at the bottom includes name filter and qualification cutoff so configs can be re-used or stored in Supabase.
 
 ## Point Schemes
 - **Balanced:** fixed points 25/18/12/8/5/2 by placement bands; DNP 0.
