@@ -14,13 +14,26 @@ def render_page() -> None:
     st.title("Series Hub")
     st.caption("Quick links to Series tools.")
     with st.sidebar:
-        if st.button("Refresh organizers (last 3 days)", type="primary"):
+        st.markdown(
+            """
+            <style>
+            [data-testid="stSidebar"] button[data-testid="stButton"][data-key="leaderboard-update"] {
+                background-color: #6cc070 !important;
+                border-color: #6cc070 !important;
+                color: #0f1b0b !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("Leaderboard Update", type="primary", key="leaderboard-update"):
             with st.spinner("Refreshing organizer tournaments (3 days)..."):
                 ok = refresh_tournament_ingest_all(max_age_days=3)
             if ok:
                 st.success("Tournament data refresh kicked off.")
             else:
                 st.error(f"Failed to trigger refresh: {get_last_supabase_error() or 'Unknown error'}")
+        st.caption("Pulls the latest API data for all configured organizers and stores it locally.")
 
     view = st.session_state.get("__series_view", "leaderboard")
     view = st.radio(
