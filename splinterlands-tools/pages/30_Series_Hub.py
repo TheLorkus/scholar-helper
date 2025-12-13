@@ -32,14 +32,14 @@ def render_page() -> None:
         st.header("Tournament Configurator (organizers)", divider="gray")
         tournament.render_page(embed_mode=True)
 
-    st.divider()
-    st.subheader("Docs: Tournament Series")
-    try:
-        with open("Tournament_Series.md", "r", encoding="utf-8") as f:
-            doc_text = f.read()
-        st.markdown(doc_text)
-    except Exception as exc:  # pragma: no cover - best-effort embed
-        st.error(f"Failed to load Tournament_Series.md: {exc}")
+        st.divider()
+        st.subheader("Docs: Tournament Series")
+        try:
+            with open("Tournament_Series.md", "r", encoding="utf-8") as f:
+                doc_text = f.read()
+            st.markdown(doc_text)
+        except Exception as exc:  # pragma: no cover - best-effort embed
+            st.error(f"Failed to load Tournament_Series.md: {exc}")
 
 
 if __name__ == "__main__":

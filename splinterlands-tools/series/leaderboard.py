@@ -81,7 +81,7 @@ def render_page(embed_mode: bool = False) -> None:
     if not configs:
         supabase_error = get_last_supabase_error()
         if supabase_error:
-            st.error(f"Supabase query failed: {supabase_error}")
+            st.error(f"Database query failed: {supabase_error}")
         else:
             st.info("No saved configs found for this organizer.")
         return
@@ -117,18 +117,18 @@ def render_page(embed_mode: bool = False) -> None:
     if note:
         st.info(note)
 
-    with st.spinner("Loading tournaments from Supabase..."):
+    with st.spinner("Loading tournaments from the database..."):
         tournaments = fetch_tournament_events_supabase(
             organizer,
             since=since_dt,
             until=until_dt,
             limit=200,
         )
-    supabase_error = get_last_supabase_error() if not tournaments else None
+        supabase_error = get_last_supabase_error() if not tournaments else None
 
     if not tournaments:
         if supabase_error:
-            st.error(f"Supabase query failed: {supabase_error}")
+            st.error(f"Database query failed: {supabase_error}")
         else:
             st.info("No tournaments found for this config.")
         return

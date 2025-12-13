@@ -310,10 +310,10 @@ def render_page():
 
     if scholar_mode and tab_history is not None:
         with tab_history:
-            st.markdown("### Supabase history (season totals)")
+            st.markdown("### Saved history (season totals)")
             supabase_client = get_supabase_client()
             if supabase_client is None:
-                st.warning("Supabase is not configured. Check environment variables or connectivity.")
+                st.warning("Database is not configured. Check environment variables or connectivity.")
             else:
                 history_username_raw = st.text_input("History username", value="")
                 normalized_history_username = history_username_raw.lower().strip()
@@ -325,10 +325,10 @@ def render_page():
                     del st.session_state[feedback_key]
 
                 if not normalized_history_username:
-                    st.info("Enter a username to load Supabase history.")
+                    st.info("Enter a username to load saved history.")
                     return
 
-                with st.spinner("Loading history from Supabase..."):
+                with st.spinner("Loading history from the database..."):
                     records = fetch_season_history(normalized_history_username)
                 if not records:
                     st.info("No season history found for that user.")
@@ -391,7 +391,7 @@ def render_page():
                     )
 
                 if history_table_rows:
-                    with st.expander("Supabase raw rows (debug)", expanded=False):
+                    with st.expander("Raw rows (debug)", expanded=False):
                         st.json(history_records_sorted)
 
                     st.dataframe(
@@ -431,7 +431,7 @@ def render_page():
                                     )
                                 st.experimental_rerun()  # type: ignore[attr-defined]
                             else:
-                                cols[3].error("Failed to update the payout currency; check your Supabase configuration.")
+                                cols[3].error("Failed to update the payout currency; check your database configuration.")
 
 
 def _merge_tournament_records(tournament_lists, season: int) -> list[dict]:

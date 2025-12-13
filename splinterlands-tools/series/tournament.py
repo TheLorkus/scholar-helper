@@ -28,7 +28,7 @@ def setup_if_standalone() -> None:
     except Exception:
         pass
 
-# Local fallback definitions in case point schemes are unavailable from Supabase.
+# Local fallback definitions in case point schemes are unavailable from the backend.
 DEFAULT_POINT_SCHEMES = {
     "balanced": {
         "slug": "balanced",
@@ -153,7 +153,7 @@ def _resolve_scheme(scheme_map: dict[str, dict], slug: str) -> dict:
 
 
 def _calculate_points_for_finish(finish: int | None, scheme: dict) -> float | None:
-    """Mirror the Supabase calculate_points_for_finish() logic in Python."""
+    """Mirror the backend calculate_points_for_finish() logic in Python."""
     if not scheme:
         return None
     mode = str(scheme.get("mode") or "fixed").lower()
@@ -263,7 +263,7 @@ def render_page(embed_mode: bool = False) -> None:
     if not embed_mode:
         setup_if_standalone()
         st.title("Tournament Series")
-        st.caption("Supabase-backed list of hosted tournaments with stored leaderboards.")
+        st.caption("Stored list of hosted tournaments with cached leaderboards.")
 
     organizers = fetch_tournament_ingest_organizers()
     col_org_1, col_org_2 = st.columns(2)
@@ -278,7 +278,7 @@ def render_page(embed_mode: bool = False) -> None:
         typed_username = st.text_input(
             "Or type any organizer username",
             placeholder="e.g., sps.tournaments",
-            help="Press Enter or click Load to fetch tournaments from Supabase/API.",
+            help="Press Enter or click Load to fetch tournaments from the database/API.",
         ).strip()
     load_clicked = st.button("Load tournaments", type="primary")
 
@@ -348,7 +348,7 @@ def render_page(embed_mode: bool = False) -> None:
         )
     supabase_error = get_last_supabase_error() if not tournaments else None
 
-    # Live API fallback for any organizer when Supabase has no rows yet.
+    # Live API fallback for any organizer when the database has no rows yet.
     if not tournaments and username:
         with st.spinner(f"Fetching tournaments for {username} from Splinterlands..."):
             tournaments = _fetch_tournaments_from_api(
@@ -363,18 +363,18 @@ def render_page(embed_mode: bool = False) -> None:
 
     if not tournaments:
         if supabase_error:
-            st.error(f"Supabase query failed: {supabase_error}")
+            st.error(f"Database query failed: {supabase_error}")
         else:
             st.info("No tournaments found for that organizer. Ingest first, then refresh.")
         return
     else:
         if source == "api":
             st.info(
-                "Using live Splinterlands API data for this organizer (not yet in Supabase). "
+                "Using live Splinterlands API data for this organizer (not yet stored). "
                 "Points are computed locally with the selected scheme."
             )
         else:
-            st.caption("Loaded tournaments from Supabase.")
+            st.caption("Loaded tournaments from stored data.")
 
     # Optional ruleset filter derived from available allowed_cards.
     ruleset_labels = sorted({(_format_ruleset(t.get("allowed_cards")) or "-") for t in tournaments})
@@ -570,7 +570,7 @@ def render_page(embed_mode: bool = False) -> None:
             st.subheader("Point Schemes")
             schemes_for_tab = schemes or fetch_point_schemes()
             if not schemes_for_tab:
-                st.info("No point schemes found in Supabase.")
+                st.info("No point schemes found in the backend.")
             else:
                 for scheme_obj in schemes_for_tab:
                     st.markdown(f"**{scheme_obj.get('label') or scheme_obj.get('slug')}** ({scheme_obj.get('mode')})")
@@ -651,7 +651,7 @@ def render_page(embed_mode: bool = False) -> None:
         "qualification_cutoff": selected_config.get("qualification_cutoff") if selected_config else None,
     }
     st.subheader("Copy/paste series config")
-    st.caption("Use this JSON payload to insert into series_configs via Supabase or helper scripts.")
+    st.caption("Use this JSON payload to insert into series_configs via your backend or helper scripts.")
     st.code(json.dumps(config_payload, indent=2), language="json")
 
 
