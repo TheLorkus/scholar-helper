@@ -46,7 +46,6 @@ def render_page() -> None:
                 index=0,
             )
             selected_match = matches[choice_idx]
-            st.session_state["guild_id_input"] = selected_match.get("id", guild_id_input)
         else:
             st.sidebar.info("No guilds matched that search.")
 
@@ -219,7 +218,7 @@ def render_page() -> None:
                             return "background-color: #f5da68; color: #3a2a00; font-weight: 800;"
                         return ""
 
-                    styled_detail = display_detail.style.format({"Win rate": "{:.1f}%"}).applymap(
+                    styled_detail = display_detail.style.format({"Win rate": "{:.1f}%"}).map(
                         _win_rate_bg, subset=["Win rate"]
                     )
 
