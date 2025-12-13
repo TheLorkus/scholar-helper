@@ -124,6 +124,35 @@ def _supabase_fetch(path: str, params: Dict[str, object] | None = None) -> list[
     return data
 
 
+def refresh_tournament_ingest_all(max_age_days: int = 3) -> bool:
+    """
+    Trigger the ingest function for all active organizers with a limited window.
+    Returns True on success, False on failure or missing creds.
+    """
+    creds = get_supabase_client()
+    if creds is None:
+        return False
+    url, key = creds
+    payload = {"max_age_days": max_age_days}
+    try:
+        resp = requests.post(
+            f"{url}/rest/v1/rpc/refresh_tournament_ingest",
+            headers=_build_auth_headers(key, "application/json"),
+            json=payload,
+            timeout=60,
+        )
+    except Exception as exc:
+        global _last_error
+        _last_error = f"Ingest trigger failed: {exc}"
+        logger.error(_last_error)
+        return False
+    if resp.status_code >= 300:
+        _last_error = f"Ingest trigger failed: {resp.status_code} {resp.text[:512]}"
+        logger.error(_last_error)
+        return False
+    return True
+
+
 def _to_iso(dt: datetime | str | None) -> Optional[str]:
     if dt is None:
         return None

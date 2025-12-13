@@ -3,6 +3,7 @@ from __future__ import annotations
 import streamlit as st
 
 from core.config import render_footer, setup_page
+from scholar_helper.services.storage import refresh_tournament_ingest_all, get_last_supabase_error
 from series import leaderboard, tournament
 
 
@@ -12,6 +13,14 @@ setup_page("Series Hub")
 def render_page() -> None:
     st.title("Series Hub")
     st.caption("Quick links to Series tools.")
+    with st.sidebar:
+        if st.button("Refresh organizers (last 3 days)", type="primary"):
+            with st.spinner("Refreshing organizer tournaments (3 days)..."):
+                ok = refresh_tournament_ingest_all(max_age_days=3)
+            if ok:
+                st.success("Tournament data refresh kicked off.")
+            else:
+                st.error(f"Failed to trigger refresh: {get_last_supabase_error() or 'Unknown error'}")
 
     view = st.session_state.get("__series_view", "leaderboard")
     view = st.radio(
