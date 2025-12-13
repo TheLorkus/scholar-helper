@@ -10,7 +10,7 @@ def render_home() -> None:
     st.markdown("### Featured tools")
     st.page_link("pages/10_Brawl_Dashboard.py", label="Brawl Dashboard", icon="🛡️")
     st.page_link("pages/20_Rewards_Tracker.py", label="Rewards Tracker", icon="🎓")
-    st.page_link("pages/30_Series_Hub.py", label="Series Hub", icon="🏆")
+    st.page_link("pages/30_Tournament_Series.py", label="Tournament Series", icon="🏆")
 
     st.markdown("### Coming soon")
     st.page_link("pages/40_SPS_Analytics.py", label="SPS Analytics", icon="📈")

@@ -18,7 +18,7 @@ def setup_if_standalone() -> None:
         import streamlit as st  # type: ignore
 
         if not st.session_state.get("__series_setup_done"):
-            setup_page("Series Leaderboard (Config)")
+            setup_page("Tournament Series")
             st.session_state["__series_setup_done"] = True
     except Exception:
         pass
@@ -65,8 +65,8 @@ def _table_height_for_rows(
 def render_page(embed_mode: bool = False) -> None:
     if not embed_mode:
         setup_if_standalone()
-        st.title("Series Leaderboard")
-        st.caption("Read-only leaderboard powered by a saved series config (no extra filters).")
+        st.title("Tournament Series")
+        st.caption("Pick an organizer and config to view its saved series leaderboard.")
 
     params = st.query_params
     default_org = params.get("organizer") or params.get("org") or "lorkus"
@@ -107,7 +107,8 @@ def render_page(embed_mode: bool = False) -> None:
     scheme = selected_config.get("point_scheme") or "balanced"
     cutoff = _as_float(selected_config.get("qualification_cutoff"))
 
-    st.subheader(selected_label)
+    title_text = f"{selected_label} Series Leaderboard"
+    st.title(title_text)
     st.caption(
         f"Scheme: {scheme} | Include IDs: {len(include_ids)} | Exclude IDs: {len(exclude_ids)} "
         f"| Window: {_format_date(since_dt)} → {_format_date(until_dt)} "
@@ -238,7 +239,6 @@ def render_page(embed_mode: bool = False) -> None:
         else:
             st.caption(f"No entries meet the {cutoff:.0f}-point cutoff.")
 
-    st.subheader("Series Leaderboard")
     st.dataframe(
         styler,
         hide_index=True,

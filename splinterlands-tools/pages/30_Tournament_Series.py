@@ -15,12 +15,12 @@ except ImportError:
 from series import leaderboard, tournament
 
 
-setup_page("Series Hub")
+setup_page("Tournament Series")
 
 
 def render_page() -> None:
-    st.title("Series Hub")
-    st.caption("Quick links to Series tools.")
+    st.title("Tournament Series")
+    st.caption("Series Leaderboard and Tournament Configurator.")
     with st.sidebar:
         st.markdown(
             """
@@ -56,7 +56,6 @@ def render_page() -> None:
     st.divider()
 
     if view == "leaderboard":
-        st.header("Series Leaderboard", divider="gray")
         leaderboard.render_page(embed_mode=True)
     else:
         st.header("Tournament Configurator (organizers)", divider="gray")
