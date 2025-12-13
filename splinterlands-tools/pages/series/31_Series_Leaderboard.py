@@ -42,6 +42,18 @@ def _as_float(value):
         return None
 
 
+def _table_height_for_rows(
+    row_count: int,
+    *,
+    row_height: int = 32,
+    min_height: int = 260,
+    max_height: int = 1100,
+    extra: int = 160,
+) -> int:
+    count = max(1, row_count)
+    return min(max_height, max(min_height, count * row_height + extra))
+
+
 def render_page() -> None:
     st.title("Series Leaderboard")
     st.caption("Read-only leaderboard powered by a saved series config (no extra filters).")
@@ -221,6 +233,7 @@ def render_page() -> None:
         styler,
         hide_index=True,
         width="stretch",
+        height=_table_height_for_rows(len(df)),
         column_config={
             "Player": st.column_config.TextColumn(),
             "Points": st.column_config.NumberColumn(format="%.0f"),
@@ -242,7 +255,12 @@ def render_page() -> None:
                 "Tournament": t.get("name") or t.get("tournament_id"),
             }
         )
-    st.dataframe(rows, hide_index=True, width="stretch")
+    st.dataframe(
+        rows,
+        hide_index=True,
+        width="stretch",
+        height=_table_height_for_rows(len(rows), min_height=180, extra=90),
+    )
 
     labels = [f"{row['Date']} - {row['Tournament']}" for row in rows]
     selected_label = st.selectbox("View event leaderboard", options=labels, index=0)
@@ -265,6 +283,7 @@ def render_page() -> None:
             ],
             hide_index=True,
             width="stretch",
+            height=_table_height_for_rows(len(leaderboard), min_height=220, extra=100),
             column_config={
                 "Finish": st.column_config.NumberColumn(format="%d"),
                 "Player": st.column_config.TextColumn(),
