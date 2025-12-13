@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Dict, List
 import streamlit as st
 
-from core.config import setup_page
+from core.config import render_footer, setup_page
 from features.scholar.service import (
     aggregate_totals,
     cached_prices,
@@ -479,3 +479,4 @@ def _aggregate_history_record(record, prices) -> AggregatedTotals:
 
 if __name__ == "__main__":
     render_page()
+    render_footer()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from core.config import setup_page
+from core.config import render_footer, setup_page
 from series import leaderboard, tournament
 
 
@@ -44,3 +44,4 @@ def render_page() -> None:
 
 if __name__ == "__main__":
     render_page()
+    render_footer()

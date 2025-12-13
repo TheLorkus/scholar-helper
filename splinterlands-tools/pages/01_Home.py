@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core.config import setup_page
+from core.config import render_footer, setup_page
 from core.home import render_home
 
 
@@ -13,3 +13,4 @@ def render_page() -> None:
 
 if __name__ == "__main__":
     render_page()
+    render_footer()
