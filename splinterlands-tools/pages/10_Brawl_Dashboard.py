@@ -50,13 +50,6 @@ def render_page() -> None:
             st.sidebar.info("No guilds matched that search.")
 
     guild_id = selected_match.get("id") if selected_match else guild_id_input or DEFAULT_GUILD_ID
-    window_brawls = st.sidebar.slider(
-        "Number of recent brawls to analyze (player stats only)",
-        min_value=5,
-        max_value=40,
-        value=20,
-        step=5,
-    )
 
     if not guild_id:
         st.info("Enter a guild ID in the sidebar to load brawl data.")
@@ -70,7 +63,7 @@ def render_page() -> None:
         return
 
     with st.spinner("Fetching player data for recent brawls..."):
-        player_rows = build_player_rows(guild_id, history, window_brawls)
+        player_rows = build_player_rows(guild_id, history, max_brawls=40)
 
     tabs = st.tabs(["Brawl history", "Player stats", "Guild trends"])
 
@@ -231,6 +224,15 @@ def render_page() -> None:
 
     with tabs[1]:
         st.subheader("Player stats over window")
+
+        window_brawls = st.slider(
+            "Number of recent brawls to analyze (player stats only)",
+            min_value=5,
+            max_value=40,
+            value=20,
+            step=5,
+            key="player_window_brawls",
+        )
 
         if player_rows.empty:
             st.info("No per player data captured yet.")
