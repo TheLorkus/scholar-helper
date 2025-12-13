@@ -163,16 +163,12 @@ def render_page() -> None:
 
                     def _win_rate_bg(val) -> str:
                         try:
-                            pct = max(0.0, min(100.0, float(val)))
+                            pct = float(val)
                         except Exception:
                             return ""
-                        start = (230, 242, 255)
-                        end = (0, 82, 204)
-                        ratio = pct / 100.0
-                        r = int(start[0] + (end[0] - start[0]) * ratio)
-                        g = int(start[1] + (end[1] - start[1]) * ratio)
-                        b = int(start[2] + (end[2] - start[2]) * ratio)
-                        return f"background-color: rgb({r},{g},{b}); color: #000000;"
+                        if pct >= 100.0:
+                            return "background-color: #f5da68; color: #3a2a00; font-weight: 800;"
+                        return ""
 
                     styled_detail = display_detail.style.format({"Win rate": "{:.1f}%"}).applymap(
                         _win_rate_bg, subset=["Win rate"]
