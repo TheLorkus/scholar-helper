@@ -8,6 +8,7 @@ import streamlit as st
 
 _ENV_LOADED_FLAG = "_SL_TOOLS_ENV_LOADED"
 
+
 def setup_page(title: str, layout: str = "wide") -> None:
     """Set common page config and load environment variables once."""
     if not os.environ.get(_ENV_LOADED_FLAG):
@@ -23,6 +24,7 @@ def setup_page(title: str, layout: str = "wide") -> None:
         """,
         unsafe_allow_html=True,
     )
+
 
 def render_footer() -> None:
     """Render a small footer at the bottom of the main page."""
