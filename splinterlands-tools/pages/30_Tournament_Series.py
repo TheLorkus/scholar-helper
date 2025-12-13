@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, date
+import json
+from datetime import datetime, date, timezone
 import pandas as pd
 
 import streamlit as st
@@ -99,6 +100,15 @@ def _parse_date(value) -> datetime | None:
         except Exception:
             return None
     return None
+
+
+def _to_iso_date(value) -> str | None:
+    dt = _parse_date(value)
+    if not dt:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat()
 
 
 def _as_float(value):
@@ -612,6 +622,24 @@ def render_page() -> None:
         )
     else:
         st.info("No leaderboard entries found for that tournament.")
+
+    st.divider()
+    include_after_iso = _to_iso_date(since_date)
+    include_before_iso = _to_iso_date(until_date)
+    config_payload = {
+        "name": (selected_config.get("name") if selected_config else None) or "(name this config)",
+        "organizer": username,
+        "point_scheme": scheme,
+        "include_ids": list(include_ids) if include_ids else [],
+        "exclude_ids": sorted(exclude_ids) if exclude_ids else [],
+        "include_after": include_after_iso,
+        "include_before": include_before_iso,
+        "visibility": (selected_config.get("visibility") if selected_config else None) or "public",
+        "note": selected_config.get("note") if selected_config else None,
+    }
+    st.subheader("Copy/paste series config")
+    st.caption("Use this JSON payload to insert into series_configs via Supabase or helper scripts.")
+    st.code(json.dumps(config_payload, indent=2), language="json")
 
 
 if __name__ == "__main__":
