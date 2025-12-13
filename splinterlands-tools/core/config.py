@@ -24,3 +24,13 @@ def setup_page(title: str, layout: str = "wide") -> None:
         """,
         unsafe_allow_html=True,
     )
+    st.sidebar.markdown(
+        """
+        <hr style="margin-top: 1rem; margin-bottom: 0.5rem;">
+        <span style="font-size:0.9em;">
+        If this tool helps you, consider
+        <a href="https://patreon.com/Lorkus" target="_blank">supporting continued development ❤️</a>
+        </span>
+        """,
+        unsafe_allow_html=True,
+    )
