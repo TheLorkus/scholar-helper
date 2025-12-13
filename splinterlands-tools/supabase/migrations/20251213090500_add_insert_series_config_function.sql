@@ -15,6 +15,7 @@ begin
     exclude_ids,
     include_after,
     include_before,
+    qualification_cutoff,
     visibility,
     note
   )
@@ -32,6 +33,7 @@ begin
     ),
     (payload->>'include_after')::timestamptz,
     (payload->>'include_before')::timestamptz,
+    nullif(payload->>'qualification_cutoff', '')::numeric,
     coalesce(nullif(payload->>'visibility', ''), 'public'),
     nullif(payload->>'note', '')
   )
