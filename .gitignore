@@ -15,3 +15,4 @@ app.db
 
 # Supabase CLI temp files
 supabase/.temp/
+splinterlands-tools/*.code-workspace
