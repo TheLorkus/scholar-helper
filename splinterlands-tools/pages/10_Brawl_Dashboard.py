@@ -10,23 +10,49 @@ from features.brawl.service import (
     build_player_rows,
     compute_player_stats,
     fetch_guild_brawls,
+    fetch_guild_list,
+    search_guilds,
 )
 
 
 setup_page("Brawl Dashboard")
+TREND_CYCLE_LIMIT = 20
 
 
 def render_page() -> None:
     st.title("Brawl Assistant")
     st.caption("Guild brawl history, player detail, and trend analysis.")
 
-    guild_id = st.sidebar.text_input(
+    default_guild = st.session_state.get("guild_id_input", DEFAULT_GUILD_ID)
+    guild_id_input = st.sidebar.text_input(
         "Guild ID",
-        value=DEFAULT_GUILD_ID,
+        value=default_guild,
         help="Guild to load brawl records for.",
+        key="guild_id_input",
     )
+    search_query = st.sidebar.text_input(
+        "Search guild by name (fuzzy)",
+        value="",
+        help="Type part of a guild name to search. Select a result to use its ID.",
+    )
+    selected_match = None
+    if search_query.strip():
+        matches = search_guilds(search_query, limit=10)
+        if matches:
+            choice_idx = st.sidebar.selectbox(
+                "Select a guild from results",
+                options=list(range(len(matches))),
+                format_func=lambda i: f"{matches[i].get('name', '').strip()} — {matches[i].get('owner', '')}",
+                index=0,
+            )
+            selected_match = matches[choice_idx]
+            st.session_state["guild_id_input"] = selected_match.get("id", guild_id_input)
+        else:
+            st.sidebar.info("No guilds matched that search.")
+
+    guild_id = selected_match.get("id") if selected_match else guild_id_input or DEFAULT_GUILD_ID
     window_brawls = st.sidebar.slider(
-        "Number of recent brawls to analyze",
+        "Number of recent brawls to analyze (player stats only)",
         min_value=5,
         max_value=40,
         value=20,
@@ -70,6 +96,29 @@ def render_page() -> None:
             if col in history.columns
         ]
         history_df = history[history_columns].copy()
+        selected_guild_info = None
+        try:
+            all_guilds = fetch_guild_list()
+            selected_guild_info = next((g for g in all_guilds if g.get("id") == guild_id), None)
+        except Exception:
+            selected_guild_info = None
+        if selected_guild_info:
+            info_cols = ["owner", "motto", "level", "brawl_status", "num_members", "rank"]
+            info_rows = {col: selected_guild_info.get(col, "") for col in info_cols}
+            friendly = {
+                "owner": "Owner",
+                "motto": "Motto",
+                "level": "Level",
+                "brawl_status": "Brawl status",
+                "num_members": "Members",
+                "rank": "Rank",
+            }
+            info_df = (
+                pd.DataFrame([info_rows])
+                .rename(columns=friendly)
+            )
+            st.markdown("#### Guild info")
+            st.dataframe(info_df, hide_index=True, width="stretch")
         rename_map = {
             "cycle": "Cycle",
             "created_date": "Date",
@@ -202,9 +251,9 @@ def render_page() -> None:
 
     with tabs[2]:
         st.subheader("Guild trends")
-        st.caption(f"Showing the last {window_brawls} cycles controlled by the slider.")
+        st.caption(f"Showing the last {TREND_CYCLE_LIMIT} cycles.")
 
-        cycles = sorted(history["cycle"].dropna().unique(), reverse=True)[:window_brawls]
+        cycles = sorted(history["cycle"].dropna().unique(), reverse=True)[:TREND_CYCLE_LIMIT]
         if not cycles:
             st.info("Cycle data is required to visualize trends.")
             return

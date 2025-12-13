@@ -6,6 +6,8 @@ from scholar_helper.services.brawl_dashboard import (
     compute_player_stats,
     fetch_brawl_details,
     fetch_guild_brawls,
+    fetch_guild_list,
+    search_guilds,
 )
 
 __all__ = [
@@ -14,4 +16,6 @@ __all__ = [
     "compute_player_stats",
     "fetch_brawl_details",
     "fetch_guild_brawls",
+    "fetch_guild_list",
+    "search_guilds",
 ]

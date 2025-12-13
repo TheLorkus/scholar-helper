@@ -5,6 +5,7 @@ from __future__ import annotations
 import requests
 import pandas as pd
 import streamlit as st
+from difflib import SequenceMatcher
 
 API_BASE = "https://api.splinterlands.com"
 DEFAULT_GUILD_ID = "9780675dc7e05224af937c37b30c3812d4e2ca30"
@@ -108,3 +109,39 @@ def compute_player_stats(players_df: pd.DataFrame, window: int = 5) -> pd.DataFr
     agg["win_rate"] = agg["wins"] / agg["matches"].replace(0, 1)
     agg["brawls_played"] = window_rows.groupby("player")["tournament_id"].nunique().values
     return agg
+
+
+@st.cache_data(ttl=86400)
+def fetch_guild_list() -> list[dict]:
+    resp = requests.get(f"{API_BASE}/guilds/list", timeout=20)
+    resp.raise_for_status()
+    data = resp.json() or {}
+    guilds = data.get("guilds") or []
+    if not isinstance(guilds, list):
+        return []
+    return guilds
+
+
+def search_guilds(query: str, limit: int = 10) -> list[dict]:
+    if not query:
+        return []
+    guilds = fetch_guild_list()
+    if not guilds:
+        return []
+    q = query.strip().lower()
+    scored: list[tuple[float, dict]] = []
+    for g in guilds:
+        name = str(g.get("name") or "").strip().lower()
+        if not name:
+            continue
+        score = SequenceMatcher(None, q, name).ratio()
+        if q in name:
+            score += 0.2
+        scored.append((score, g))
+    scored.sort(key=lambda t: t[0], reverse=True)
+    top = []
+    for score, g in scored[:limit]:
+        g_copy = dict(g)
+        g_copy["_match_score"] = score
+        top.append(g_copy)
+    return top
