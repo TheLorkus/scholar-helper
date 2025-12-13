@@ -18,7 +18,15 @@ from scholar_helper.services.storage import (
 )
 
 
-setup_page("Tournament Series")
+def setup_if_standalone() -> None:
+    try:
+        import streamlit as st  # type: ignore
+
+        if not st.session_state.get("__series_tournament_setup_done"):
+            setup_page("Tournament Series")
+            st.session_state["__series_tournament_setup_done"] = True
+    except Exception:
+        pass
 
 # Local fallback definitions in case point schemes are unavailable from Supabase.
 DEFAULT_POINT_SCHEMES = {
@@ -251,9 +259,11 @@ def _fetch_results_from_api(
     return all_rows, by_event
 
 
-def render_page() -> None:
-    st.title("Tournament Series")
-    st.caption("Supabase-backed list of hosted tournaments with stored leaderboards.")
+def render_page(embed_mode: bool = False) -> None:
+    if not embed_mode:
+        setup_if_standalone()
+        st.title("Tournament Series")
+        st.caption("Supabase-backed list of hosted tournaments with stored leaderboards.")
 
     organizers = fetch_tournament_ingest_organizers()
     col_org_1, col_org_2 = st.columns(2)

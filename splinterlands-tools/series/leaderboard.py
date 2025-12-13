@@ -13,7 +13,15 @@ from scholar_helper.services.storage import (
 )
 
 
-setup_page("Series Leaderboard (Config)")
+def setup_if_standalone() -> None:
+    try:
+        import streamlit as st  # type: ignore
+
+        if not st.session_state.get("__series_setup_done"):
+            setup_page("Series Leaderboard (Config)")
+            st.session_state["__series_setup_done"] = True
+    except Exception:
+        pass
 
 
 def _parse_date(value) -> datetime | None:
@@ -54,9 +62,11 @@ def _table_height_for_rows(
     return min(max_height, max(min_height, count * row_height + extra))
 
 
-def render_page() -> None:
-    st.title("Series Leaderboard")
-    st.caption("Read-only leaderboard powered by a saved series config (no extra filters).")
+def render_page(embed_mode: bool = False) -> None:
+    if not embed_mode:
+        setup_if_standalone()
+        st.title("Series Leaderboard")
+        st.caption("Read-only leaderboard powered by a saved series config (no extra filters).")
 
     params = st.query_params
     default_org = params.get("organizer") or params.get("org") or "lorkus"
