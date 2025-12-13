@@ -161,8 +161,21 @@ def render_page() -> None:
                         }
                     )
 
-                    styled_detail = display_detail.style.format({"Win rate": "{:.1f}%"}).background_gradient(
-                        subset=["Win rate"], cmap="Blues"
+                    def _win_rate_bg(val) -> str:
+                        try:
+                            pct = max(0.0, min(100.0, float(val)))
+                        except Exception:
+                            return ""
+                        start = (230, 242, 255)
+                        end = (0, 82, 204)
+                        ratio = pct / 100.0
+                        r = int(start[0] + (end[0] - start[0]) * ratio)
+                        g = int(start[1] + (end[1] - start[1]) * ratio)
+                        b = int(start[2] + (end[2] - start[2]) * ratio)
+                        return f"background-color: rgb({r},{g},{b}); color: #000000;"
+
+                    styled_detail = display_detail.style.format({"Win rate": "{:.1f}%"}).applymap(
+                        _win_rate_bg, subset=["Win rate"]
                     )
 
                     st.dataframe(
