@@ -28,6 +28,7 @@ def setup_if_standalone() -> None:
     except Exception:
         pass
 
+
 # Local fallback definitions in case point schemes are unavailable from the backend.
 DEFAULT_POINT_SCHEMES = {
     "balanced": {
