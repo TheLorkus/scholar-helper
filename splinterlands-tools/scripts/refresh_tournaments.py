@@ -21,11 +21,14 @@ import requests
 API_BASE = "https://api.splinterlands.com"
 
 
-def _env(var: str) -> str:
-    val = os.getenv(var)
-    if not val:
-        raise SystemExit(f"Missing environment variable: {var}")
-    return val
+def _get_supabase_creds() -> tuple[str, str]:
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
+    if not url or not key:
+        raise SystemExit(
+            "Missing Supabase credentials. Set SUPABASE_URL and either SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_KEY."
+        )
+    return url, key
 
 
 def _http_get(url: str, params: Optional[dict] = None) -> Optional[dict]:
@@ -130,8 +133,7 @@ def upsert(url: str, key: str, table: str, rows: list[dict]) -> None:
 
 
 def ingest_organizer(organizer: str, max_age_days: int) -> None:
-    supabase_url = _env("SUPABASE_URL")
-    supabase_key = _env("SUPABASE_SERVICE_ROLE_KEY") or _env("SUPABASE_SERVICE_KEY")
+    supabase_url, supabase_key = _get_supabase_creds()
 
     list_resp = _http_get(f"{API_BASE}/tournaments/mine", params={"username": organizer})
     if not isinstance(list_resp, list):
