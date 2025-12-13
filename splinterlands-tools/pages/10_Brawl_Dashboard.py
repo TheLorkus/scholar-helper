@@ -70,25 +70,39 @@ def render_page() -> None:
             if col in history.columns
         ]
         history_df = history[history_columns].copy()
+        rename_map = {
+            "cycle": "Cycle",
+            "created_date": "Date",
+            "tournament_id": "Tournament",
+            "brawl_rank": "Rank",
+            "wins": "Wins",
+            "losses": "Losses",
+            "draws": "Draws",
+            "pts": "PTS",
+            "total_merits_payout": "Merits",
+            "total_sps_payout": "SPS",
+            "auto_wins": "Auto wins",
+        }
+        display_history = history_df.rename(columns=rename_map)
 
         def _style_history(df: pd.DataFrame) -> pd.DataFrame:
             styles = pd.DataFrame("", index=df.index, columns=df.columns)
-            if "brawl_rank" in df.columns:
+            if "Rank" in df.columns:
                 gold = "#f5da68"
                 silver = "#d7d9db"
                 bronze = "#d29b6f"
-                styles.loc[df["brawl_rank"] == 1, :] = (
+                styles.loc[df["Rank"] == 1, "Rank"] = (
                     f"background-color: {gold}; color: #3a2a00; font-weight: 800;"
                 )
-                styles.loc[df["brawl_rank"] == 2, :] = (
+                styles.loc[df["Rank"] == 2, "Rank"] = (
                     f"background-color: {silver}; color: #2f2f2f; font-weight: 700;"
                 )
-                styles.loc[df["brawl_rank"] == 3, :] = (
+                styles.loc[df["Rank"] == 3, "Rank"] = (
                     f"background-color: {bronze}; color: #3a1f00; font-weight: 700;"
                 )
             return styles
 
-        styled_history = history_df.style.apply(_style_history, axis=None)
+        styled_history = display_history.style.apply(_style_history, axis=None)
 
         st.dataframe(
             styled_history,
@@ -123,25 +137,32 @@ def render_page() -> None:
                     brawl_detail_df["win_rate"] = (
                         brawl_detail_df["wins"] / brawl_detail_df["matches"].replace(0, 1)
                     ).fillna(0.0)
+                    brawl_detail_df["win_rate_pct"] = (brawl_detail_df["win_rate"] * 100).round(1)
                     brawl_detail_df = brawl_detail_df.sort_values(
                         ["win_rate", "wins", "losses"],
                         ascending=[False, False, True],
                     )
-                    display_cols = ["player", "wins", "losses", "draws", "matches", "win_rate"]
+                    display_cols = [
+                        "player",
+                        "wins",
+                        "losses",
+                        "draws",
+                        "matches",
+                        "win_rate_pct",
+                    ]
+                    display_detail = brawl_detail_df[display_cols].rename(
+                        columns={
+                            "player": "Player",
+                            "wins": "Wins",
+                            "losses": "Losses",
+                            "draws": "Draws",
+                            "matches": "Matches",
+                            "win_rate_pct": "Win rate",
+                        }
+                    )
 
-                    def _style_perfect_rows(df: pd.DataFrame) -> pd.DataFrame:
-                        styles = pd.DataFrame("", index=df.index, columns=df.columns)
-                        if "losses" in df.columns:
-                            mask = df["losses"] == 0
-                            styles.loc[mask, :] = (
-                                "background-color: #f5da68; color: #3a2a00; font-weight: 800;"
-                            )
-                        return styles
-
-                    styled_detail = (
-                        brawl_detail_df[display_cols]
-                        .style.format({"win_rate": "{:.2f}"})
-                        .apply(_style_perfect_rows, axis=None)
+                    styled_detail = display_detail.style.format({"Win rate": "{:.1f}%"}).background_gradient(
+                        subset=["Win rate"], cmap="Blues"
                     )
 
                     st.dataframe(
